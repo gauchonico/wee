@@ -1,0 +1,158 @@
+{% extends 'base.html' %}
+
+
+{% block page_title %}{{ farmer_group.name }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">Farmer Group Details</h3>
+                    <div class="card-tools">
+                        <a href="{% url 'cooperatives:farmer-group-update' farmer_group.pk %}" class="btn btn-warning btn-sm">
+                            <i class="bi bi-pencil"></i> Edit
+                        </a>
+                        <a href="{% url 'cooperatives:farmer-group-delete' farmer_group.pk %}" class="btn btn-danger btn-sm">
+                            <i class="bi bi-trash"></i> Delete
+                        </a>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h4>Basic Information</h4>
+                            <table class="table table-bordered">
+                                <tr>
+                                    <th>Name</th>
+                                    <td>{{ farmer_group.name }}</td>
+                                </tr>
+                                <tr>
+                                    <th>Code</th>
+                                    <td>{{ farmer_group.code }}</td>
+                                </tr>
+                                <tr>
+                                    <th>Cooperative</th>
+                                    <td>{{ farmer_group.cooperative.fpo_name }}</td>
+                                </tr>
+                                <tr>
+                                    <th>Product</th>
+                                    <td>{{ farmer_group.product|default:"-" }}</td>
+                                </tr>
+                                <tr>
+                                    <th>VSLA Status</th>
+                                    <td>
+                                        {% if farmer_group.is_VSLA %}
+                                            <span class="badge bg-success">Yes</span>
+                                        {% else %}
+                                            <span class="badge bg-secondary">No</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <th>Active Status</th>
+                                    <td>
+                                        {% if farmer_group.is_active %}
+                                            <span class="badge bg-success">Active</span>
+                                        {% else %}
+                                            <span class="badge bg-danger">Inactive</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                            </table>
+                        </div>
+                        <div class="col-md-6">
+                            <h4>Location Information</h4>
+                            <table class="table table-bordered">
+                                <tr>
+                                    <th>District</th>
+                                    <td>{{ farmer_group.district }}</td>
+                                </tr>
+                                <tr>
+                                    <th>Sub County</th>
+                                    <td>{{ farmer_group.sub_county }}</td>
+                                </tr>
+                                <tr>
+                                    <th>Parish</th>
+                                    <td>{{ farmer_group.parish|default:"-" }}</td>
+                                </tr>
+                                <tr>
+                                    <th>Village</th>
+                                    <td>{{ farmer_group.village|default:"-" }}</td>
+                                </tr>
+                            </table>
+                        </div>
+                    </div>
+                    <div class="row mt-4">
+                        <div class="col-md-6">
+                            <h4>Contact Information</h4>
+                            <table class="table table-bordered">
+                                <tr>
+                                    <th>Contact Person</th>
+                                    <td>{{ farmer_group.contact_person }}</td>
+                                </tr>
+                                <tr>
+                                    <th>Phone Number</th>
+                                    <td>{{ farmer_group.phone_number }}</td>
+                                </tr>
+                            </table>
+                        </div>
+                        <div class="col-md-6">
+                            <h4>Additional Information</h4>
+                            <table class="table table-bordered">
+                                <tr>
+                                    <th>Created At</th>
+                                    <td>{{ farmer_group.created_at }}</td>
+                                </tr>
+                                <tr>
+                                    <th>Last Updated</th>
+                                    <td>{{ farmer_group.updated_at }}</td>
+                                </tr>
+                            </table>
+                        </div>
+                    </div>
+                    
+                    <div class="row mt-4">
+                        <div class="col-12">
+                            <h4>Members</h4>
+                            <div class="table-responsive">
+                                <table class="table table-bordered table-striped">
+                                    <thead>
+                                        <tr>
+                                            <th>Name</th>
+                                            <th>Member ID</th>
+                                            <th>Role</th>
+                                            <th>Phone Number</th>
+                                            <th>Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for member in members %}
+                                        <tr>
+                                            <td>{{ member.name }}</td>
+                                            <td>{{ member.member_id }}</td>
+                                            <td>{{ member.get_role_display }}</td>
+                                            <td>{{ member.phone_number }}</td>
+                                            <td>
+                                                <a href="{% url 'cooperatives:member-detail' member.pk %}" class="btn btn-info btn-sm">
+                                                    <i class="bi bi-eye"></i>
+                                                </a>
+                                            </td>
+                                        </tr>
+                                        {% empty %}
+                                        <tr>
+                                            <td colspan="5" class="text-center">No members found in this group.</td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

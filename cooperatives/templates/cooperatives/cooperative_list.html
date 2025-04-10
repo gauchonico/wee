@@ -1,0 +1,153 @@
+{% extends 'base.html' %}
+
+{% load static %}
+
+{% block page_title %}Cooperatives{% endblock %}
+{% block css %}
+	<link href="{% static 'plugins/datatables.net-bs5/css/dataTables.bootstrap5.min.css' %}" rel="stylesheet" />
+	<link href="{% static 'plugins/datatables.net-buttons-bs5/css/buttons.bootstrap5.min.css' %}" rel="stylesheet" />
+	<link href="{% static 'plugins/datatables.net-responsive-bs5/css/responsive.bootstrap5.min.css' %}" rel="stylesheet" />
+	<link href="{% static 'plugins/bootstrap-table/dist/bootstrap-table.min.css' %}" rel="stylesheet" />
+{% endblock %}
+
+{% block js %}
+	<script src="{% static 'plugins/@highlightjs/cdn-assets/highlight.min.js' %}"></script>
+	<script src="{% static 'js/demo/highlightjs.demo.js' %}"></script>
+	<script src="{% static 'plugins/datatables.net/js/dataTables.min.js' %}"></script>
+	<script src="{% static 'plugins/datatables.net-bs5/js/dataTables.bootstrap5.min.js' %}"></script>
+	<script src="{% static 'plugins/datatables.net-buttons/js/dataTables.buttons.min.js' %}"></script>
+	<script src="{% static 'plugins/datatables.net-buttons/js/buttons.colVis.min.js' %}"></script>
+	<script src="{% static 'plugins/datatables.net-buttons/js/buttons.flash.min.js' %}"></script>
+	<script src="{% static 'plugins/datatables.net-buttons/js/buttons.html5.min.js' %}"></script>
+	<script src="{% static 'plugins/datatables.net-buttons/js/buttons.print.min.js' %}"></script>
+	<script src="{% static 'plugins/datatables.net-buttons-bs5/js/buttons.bootstrap5.min.js' %}"></script>
+	<script src="{% static 'plugins/datatables.net-responsive/js/dataTables.responsive.min.js' %}"></script>
+	<script src="{% static 'plugins/datatables.net-responsive-bs5/js/responsive.bootstrap5.min.js' %}"></script>
+	<script src="{% static 'plugins/bootstrap-table/dist/bootstrap-table.min.js' %}"></script>
+	<script src="{% static 'js/demo/table-plugins.demo.js' %}"></script>
+	<script src="{% static 'js/demo/sidebar-scrollspy.demo.js' %}"></script>
+{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between mb-3">
+    <h5 class="mb-0">All Cooperatives</h5>
+    <div>
+        <a href="{% url 'cooperatives:cooperative-bulk-upload' %}" class="btn btn-success btn-sm me-2">
+            <i class="bi bi-file-earmark-arrow-up"></i> Bulk Upload
+        </a>
+        <a href="{% url 'cooperatives:cooperative-create' %}" class="btn bg-teal-800 btn-sm">
+            <i class="bi bi-plus-circle"></i> Add New Cooperative
+        </a>
+    </div>
+</div>
+
+{% if cooperatives %}
+<div class="table-responsive">
+    <table id="datatableDefault" class="table text-nowrap w-100">
+        <thead>
+            <tr>
+                <th>No.</th>
+                <th>Logo</th>
+                <th>FPO Name</th>
+                <th>FPO Type</th>
+                <th>District</th>
+                
+                <th>Sub County</th>
+                <th>Actions</th>
+                <th>Contact Person</th>
+                <th>Phone Number</th>
+                <th>Members</th>
+                <th>Balance</th>
+                
+            </tr>
+        </thead>
+        <tbody>
+            {% for cooperative in cooperatives %}
+            <tr>
+                <td>
+                    {{ forloop.counter }}
+                </td>
+                <td>
+                    {% if cooperative.logo %}
+                    <img src="{{ cooperative.logo.url }}" alt="{{ cooperative.fpo_name }}" class="img-thumbnail" width="50">
+                    {% else %}
+                    
+                    <i class="bi bi-yelp"></i>
+                    {% endif %}
+                </td>
+                <td>{{ cooperative.fpo_name }}</td>
+                <td>{{ cooperative.get_fpo_type_display }}</td>
+                <td>{{ cooperative.district }}</td>
+                <td>{{ cooperative.sub_county }}</td>
+                <td>
+                    <div class="btn-group">
+                        <a href="{% url 'cooperatives:cooperative-detail' cooperative.pk %}" class="btn btn-sm btn-info">
+                            <i class="bi bi-eye"></i>
+                        </a>
+                        <a href="{% url 'cooperatives:cooperative-update' cooperative.pk %}" class="btn btn-sm btn-warning">
+                            <i class="bi bi-pencil"></i>
+                        </a>
+                        <a href="{% url 'cooperatives:cooperative-delete' cooperative.pk %}" class="btn btn-sm btn-danger">
+                            <i class="bi bi-trash"></i>
+                        </a>
+                    </div>
+                </td>
+                <td>{{ cooperative.contact_person }}</td>
+                <td>{{ cooperative.phone_number }}</td>
+                <td>{{ cooperative.members }}</td>
+                <td>{{ cooperative.balance }}</td>
+                
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+{% if is_paginated %}
+<nav aria-label="Page navigation">
+    <ul class="pagination justify-content-center">
+        {% if page_obj.has_previous %}
+        <li class="page-item">
+            <a class="page-link" href="?page={{ page_obj.previous_page_number }}" aria-label="Previous">
+                <span aria-hidden="true">&laquo;</span>
+            </a>
+        </li>
+        {% else %}
+        <li class="page-item disabled">
+            <a class="page-link" href="#" aria-label="Previous">
+                <span aria-hidden="true">&laquo;</span>
+            </a>
+        </li>
+        {% endif %}
+        
+        {% for num in page_obj.paginator.page_range %}
+            {% if page_obj.number == num %}
+            <li class="page-item active"><a class="page-link" href="#">{{ num }}</a></li>
+            {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+            <li class="page-item"><a class="page-link" href="?page={{ num }}">{{ num }}</a></li>
+            {% endif %}
+        {% endfor %}
+        
+        {% if page_obj.has_next %}
+        <li class="page-item">
+            <a class="page-link" href="?page={{ page_obj.next_page_number }}" aria-label="Next">
+                <span aria-hidden="true">&raquo;</span>
+            </a>
+        </li>
+        {% else %}
+        <li class="page-item disabled">
+            <a class="page-link" href="#" aria-label="Next">
+                <span aria-hidden="true">&raquo;</span>
+            </a>
+        </li>
+        {% endif %}
+    </ul>
+</nav>
+{% endif %}
+
+{% else %}
+<div class="alert bg-teal-900 text-white">
+    <i class="bi bi-info-circle"></i> No cooperatives found. <a href="{% url 'cooperatives:cooperative-create' %}">Create one now</a>.
+</div>
+{% endif %}
+{% endblock %} 

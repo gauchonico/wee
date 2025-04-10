@@ -1,0 +1,83 @@
+{% extends 'base.html' %}
+
+
+{% block page_title %}Delete Member{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">Delete Member</h3>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-danger">
+                        <h4><i class="bi bi-exclamation-triangle"></i> Warning</h4>
+                        <p>Are you sure you want to delete the member "{{ member.name }}"?</p>
+                        <p>This action cannot be undone.</p>
+                    </div>
+                    
+                    <div class="card mb-4">
+                        <div class="card-header">
+                            <h4>Member Details</h4>
+                        </div>
+                        <div class="card-body">
+                            <table class="table table-bordered">
+                                <tr>
+                                    <th>Name</th>
+                                    <td>{{ member.name }}</td>
+                                </tr>
+                                <tr>
+                                    <th>Member ID</th>
+                                    <td>{{ member.member_id }}</td>
+                                </tr>
+                                <tr>
+                                    <th>Gender</th>
+                                    <td>{{ member.get_gender_display }}</td>
+                                </tr>
+                                <tr>
+                                    <th>Phone Number</th>
+                                    <td>{{ member.phone_number }}</td>
+                                </tr>
+                                <tr>
+                                    <th>Role</th>
+                                    <td>{{ member.get_role_display }}</td>
+                                </tr>
+                                <tr>
+                                    <th>Cooperative</th>
+                                    <td>{{ member.cooperative.fpo_name }}</td>
+                                </tr>
+                                <tr>
+                                    <th>Farmer Group</th>
+                                    <td>{{ member.farmer_group.name }}</td>
+                                </tr>
+                                <tr>
+                                    <th>District</th>
+                                    <td>{{ member.district }}</td>
+                                </tr>
+                                <tr>
+                                    <th>Sub County</th>
+                                    <td>{{ member.sub_county }}</td>
+                                </tr>
+                            </table>
+                        </div>
+                    </div>
+                    
+                    <form method="post">
+                        {% csrf_token %}
+                        <div class="form-group">
+                            <button type="submit" class="btn btn-danger">
+                                <i class="bi bi-trash"></i> Delete Member
+                            </button>
+                            <a href="{% url 'cooperatives:member-list' %}" class="btn btn-secondary">
+                                <i class="bi bi-x-circle"></i> Cancel
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

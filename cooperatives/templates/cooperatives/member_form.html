@@ -1,0 +1,97 @@
+{% extends 'base.html' %}
+
+
+{% block page_title %}
+    {% if form.instance.pk %}
+        Edit Member
+    {% else %}
+        Add Member
+    {% endif %}
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">
+                        {% if form.instance.pk %}
+                            Edit Member
+                        {% else %}
+                            Add Member
+                        {% endif %}
+                    </h3>
+                </div>
+                <div class="card-body">
+                    <form method="post" class="form-horizontal">
+                        {% csrf_token %}
+                        
+                        {% for field in form %}
+                        <div class="form-group row">
+                            <label for="{{ field.id_for_label }}" class="col-sm-2 col-form-label">{{ field.label }}</label>
+                            <div class="col-sm-10">
+                                {{ field }}
+                                {% if field.errors %}
+                                <div class="alert alert-danger">
+                                    {{ field.errors }}
+                                </div>
+                                {% endif %}
+                                {% if field.help_text %}
+                                <small class="form-text text-muted">{{ field.help_text }}</small>
+                                {% endif %}
+                            </div>
+                        </div>
+                        {% endfor %}
+                        
+                        <div class="form-group row mt-5">
+                            <div class="offset-sm-2 col-sm-10">
+                                <button type="submit" class="btn bg-teal-800">
+                                    {% if form.instance.pk %}
+                                        Update Member
+                                    {% else %}
+                                        Create Member
+                                    {% endif %}
+                                </button>
+                                <a href="{% url 'cooperatives:member-list' %}" class="btn btn-secondary">Cancel</a>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% block extra_js %}
+<script>
+    // Add JavaScript to dynamically update farmer groups based on selected cooperative
+    document.addEventListener('DOMContentLoaded', function() {
+        const cooperativeSelect = document.getElementById('id_cooperative');
+        const farmerGroupSelect = document.getElementById('id_farmer_group');
+        
+        cooperativeSelect.addEventListener('change', function() {
+            const cooperativeId = this.value;
+            if (cooperativeId) {
+                // Clear current options
+                farmerGroupSelect.innerHTML = '<option value="">---------</option>';
+                
+                // Fetch farmer groups for selected cooperative
+                fetch(`/cooperatives/api/farmer-groups/?cooperative=${cooperativeId}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        data.forEach(group => {
+                            const option = document.createElement('option');
+                            option.value = group.id;
+                            option.textContent = group.name;
+                            farmerGroupSelect.appendChild(option);
+                        });
+                    });
+            } else {
+                farmerGroupSelect.innerHTML = '<option value="">---------</option>';
+            }
+        });
+    });
+</script>
+{% endblock %}
+{% endblock %} 

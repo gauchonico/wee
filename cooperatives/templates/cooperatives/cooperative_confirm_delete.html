@@ -1,0 +1,69 @@
+{% extends 'base.html' %}
+
+{% load static %}
+
+{% block page_title %}Delete Cooperative{% endblock %}
+
+{% block cooperatives_content %}
+<div class="d-flex justify-content-between mb-3">
+    <h5 class="mb-0">Delete Cooperative</h5>
+    <a href="{% url 'cooperatives:cooperative-detail' cooperative.pk %}" class="btn btn-secondary btn-sm">
+        <i class="bi bi-arrow-left"></i> Back to Detail
+    </a>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <h5 class="card-title mb-0">Confirm Deletion</h5>
+    </div>
+    <div class="card-body">
+        <div class="alert alert-danger">
+            <i class="bi bi-exclamation-triangle"></i> <strong>Warning!</strong> This action cannot be undone.
+        </div>
+        
+        <p>Are you sure you want to delete the cooperative <strong>{{ cooperative.fpo_name }}</strong>?</p>
+        
+        <p>This will also delete all associated farmer groups and members.</p>
+        
+        <div class="row mt-4">
+            <div class="col-md-6">
+                <div class="card mb-3">
+                    <div class="card-header">
+                        <h6 class="card-title mb-0">Cooperative Details</h6>
+                    </div>
+                    <div class="card-body">
+                        <p><strong>FPO Name:</strong> {{ cooperative.fpo_name }}</p>
+                        <p><strong>FPO Type:</strong> {{ cooperative.get_fpo_type_display }}</p>
+                        <p><strong>District:</strong> {{ cooperative.district }}</p>
+                        <p><strong>Sub County:</strong> {{ cooperative.sub_county }}</p>
+                        <p><strong>Contact Person:</strong> {{ cooperative.contact_person }}</p>
+                        <p><strong>Phone Number:</strong> {{ cooperative.phone_number }}</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-6">
+                <div class="card mb-3">
+                    <div class="card-header">
+                        <h6 class="card-title mb-0">Impact</h6>
+                    </div>
+                    <div class="card-body">
+                        <p><strong>Farmer Groups:</strong> {{ cooperative.farmer_groups.count }}</p>
+                        <p><strong>Members:</strong> {{ cooperative.members }}</p>
+                        <p><strong>Balance:</strong> {{ cooperative.balance }}</p>
+                        <p><strong>Collections:</strong> {{ cooperative.collections }}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <form method="post">
+            {% csrf_token %}
+            <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                <a href="{% url 'cooperatives:cooperative-detail' cooperative.pk %}" class="btn btn-secondary me-md-2">Cancel</a>
+                <button type="submit" class="btn btn-danger">Delete Cooperative</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %} 

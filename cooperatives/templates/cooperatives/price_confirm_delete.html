@@ -1,0 +1,48 @@
+{% extends 'base.html' %}
+
+{% load static %}
+
+{% block page_title %}Delete Price{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header">
+        <h5 class="mb-0">Delete Price</h5>
+    </div>
+    <div class="card-body">
+        <div class="alert alert-warning">
+            <i class="bi bi-exclamation-triangle"></i> Are you sure you want to delete this price?
+        </div>
+        
+        <div class="mb-4">
+            <h6>Price Details:</h6>
+            <table class="table">
+                <tr>
+                    <th>Product:</th>
+                    <td>{{ price.product.name }}</td>
+                </tr>
+                <tr>
+                    <th>Price:</th>
+                    <td>{{ price.price }}</td>
+                </tr>
+                <tr>
+                    <th>Unit:</th>
+                    <td>{{ price.unit }}</td>
+                </tr>
+                <tr>
+                    <th>Effective Date:</th>
+                    <td>{{ price.effective_date }}</td>
+                </tr>
+            </table>
+        </div>
+        
+        <form method="post">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-danger">
+                <i class="bi bi-trash"></i> Delete Price
+            </button>
+            <a href="{% url 'cooperatives:price-detail' price.pk %}" class="btn btn-secondary">Cancel</a>
+        </form>
+    </div>
+</div>
+{% endblock %} 

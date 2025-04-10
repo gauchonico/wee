@@ -1,0 +1,54 @@
+{% extends 'base.html' %}
+
+{% load static %}
+
+{% block page_title %}Delete District - {{ district.name }}{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h5 class="mb-0">Delete District</h5>
+        <a href="{% url 'cooperatives:district-detail' district.pk %}" class="btn btn-secondary btn-sm">
+            <i class="bi bi-arrow-left"></i> Back to Details
+        </a>
+    </div>
+    <div class="card-body">
+        <div class="alert alert-danger">
+            <i class="bi bi-exclamation-triangle"></i>
+            <strong>Warning!</strong> Are you sure you want to delete the district "{{ district.name }}"?
+            This action cannot be undone.
+        </div>
+
+        <dl class="row">
+            <dt class="col-sm-3">Name</dt>
+            <dd class="col-sm-9">{{ district.name }}</dd>
+
+            <dt class="col-sm-3">Code</dt>
+            <dd class="col-sm-9">{{ district.code }}</dd>
+
+            <dt class="col-sm-3">Counties</dt>
+            <dd class="col-sm-9">{{ district.counties.count }}</dd>
+        </dl>
+
+        {% if district.counties.exists %}
+        <div class="alert alert-warning">
+            <i class="bi bi-info-circle"></i>
+            This district has {{ district.counties.count }} county(ies) associated with it. 
+            Deleting this district will also remove all associated counties and their data.
+        </div>
+        {% endif %}
+
+        <form method="post">
+            {% csrf_token %}
+            <div class="mt-3">
+                <button type="submit" class="btn btn-danger">
+                    <i class="bi bi-trash"></i> Confirm Delete
+                </button>
+                <a href="{% url 'cooperatives:district-detail' district.pk %}" class="btn btn-secondary">
+                    <i class="bi bi-x"></i> Cancel
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %} 

@@ -1,0 +1,79 @@
+{% extends 'base.html' %}
+
+
+{% block page_title %}Delete Farmer Group{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">Delete Farmer Group</h3>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-danger">
+                        <h4><i class="bi bi-exclamation-triangle"></i> Warning</h4>
+                        <p>Are you sure you want to delete the farmer group "{{ farmer_group.name }}"?</p>
+                        <p>This action cannot be undone.</p>
+                    </div>
+                    
+                    <div class="card mb-4">
+                        <div class="card-header">
+                            <h4>Farmer Group Details</h4>
+                        </div>
+                        <div class="card-body">
+                            <table class="table table-bordered">
+                                <tr>
+                                    <th>Name</th>
+                                    <td>{{ farmer_group.name }}</td>
+                                </tr>
+                                <tr>
+                                    <th>Code</th>
+                                    <td>{{ farmer_group.code }}</td>
+                                </tr>
+                                <tr>
+                                    <th>Cooperative</th>
+                                    <td>{{ farmer_group.cooperative.fpo_name }}</td>
+                                </tr>
+                                <tr>
+                                    <th>District</th>
+                                    <td>{{ farmer_group.district }}</td>
+                                </tr>
+                                <tr>
+                                    <th>Sub County</th>
+                                    <td>{{ farmer_group.sub_county }}</td>
+                                </tr>
+                                <tr>
+                                    <th>Village</th>
+                                    <td>{{ farmer_group.village }}</td>
+                                </tr>
+                                <tr>
+                                    <th>Contact Person</th>
+                                    <td>{{ farmer_group.contact_person }}</td>
+                                </tr>
+                                <tr>
+                                    <th>Phone Number</th>
+                                    <td>{{ farmer_group.phone_number }}</td>
+                                </tr>
+                            </table>
+                        </div>
+                    </div>
+                    
+                    <form method="post">
+                        {% csrf_token %}
+                        <div class="form-group">
+                            <button type="submit" class="btn btn-danger">
+                                <i class="bi bi-trash"></i> Delete Farmer Group
+                            </button>
+                            <a href="{% url 'cooperatives:farmer-group-list' %}" class="btn btn-secondary">
+                                <i class="bi bi-x-circle"></i> Cancel
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

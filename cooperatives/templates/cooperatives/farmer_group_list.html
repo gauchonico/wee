@@ -1,0 +1,94 @@
+{% extends 'base.html' %}
+
+
+{% block page_title %}Farmer Groups{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">Farmer Groups</h3>
+                    <div class="card-tools">
+                        <a href="{% url 'cooperatives:farmer-group-create' %}" class="btn bg-teal-800 btn-sm">
+                            <i class="bi bi-plus-circle"></i> Add Farmer Group
+                        </a>
+                        <a href="{% url 'cooperatives:farmer-group-bulk-upload' %}" class="btn btn-success btn-sm me-2">
+                            <i class="bi bi-file-earmark-arrow-up"></i> Bulk Upload
+                        </a>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-bordered table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Name</th>
+                                    <th>Code</th>
+                                    <th>Cooperative</th>
+                                    <th>District</th>
+                                    <th>Sub County</th>
+                                    <th>Parish</th>
+                                    <th>Village</th>
+                                    <th>Product</th>
+                                    <th>VSLA</th>
+                                    <th>Status</th>
+                                    <th>Contact Person</th>
+                                    <th>Phone Number</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for group in farmer_groups %}
+                                <tr>
+                                    <td>{{ group.name }}</td>
+                                    <td>{{ group.code }}</td>
+                                    <td>{{ group.cooperative.fpo_name }}</td>
+                                    <td>{{ group.district }}</td>
+                                    <td>{{ group.sub_county }}</td>
+                                    <td>{{ group.parish|default:"-" }}</td>
+                                    <td>{{ group.village|default:"-" }}</td>
+                                    <td>{{ group.product|default:"-" }}</td>
+                                    <td>
+                                        {% if group.is_VSLA %}
+                                            <span class="badge bg-success">Yes</span>
+                                        {% else %}
+                                            <span class="badge bg-secondary">No</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if group.is_active %}
+                                            <span class="badge bg-success">Active</span>
+                                        {% else %}
+                                            <span class="badge bg-danger">Inactive</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ group.contact_person }}</td>
+                                    <td>{{ group.phone_number }}</td>
+                                    <td>
+                                        <a href="{% url 'cooperatives:farmer-group-detail' group.pk %}" class="btn btn-info btn-sm">
+                                            <i class="bi bi-eye"></i>
+                                        </a>
+                                        <a href="{% url 'cooperatives:farmer-group-update' group.pk %}" class="btn btn-warning btn-sm">
+                                            <i class="bi bi-pencil"></i>
+                                        </a>
+                                        <a href="{% url 'cooperatives:farmer-group-delete' group.pk %}" class="btn btn-danger btn-sm">
+                                            <i class="bi bi-trash"></i>
+                                        </a>
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="13" class="text-center">No farmer groups found.</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

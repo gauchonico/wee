@@ -1,0 +1,57 @@
+{% extends 'base.html' %}
+
+{% load static %}
+
+{% block page_title %}Delete County - {{ county.name }}{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h5 class="mb-0">Delete County</h5>
+        <a href="{% url 'cooperatives:county-detail' county.pk %}" class="btn btn-secondary btn-sm">
+            <i class="bi bi-arrow-left"></i> Back to Details
+        </a>
+    </div>
+    <div class="card-body">
+        <div class="alert alert-danger">
+            <i class="bi bi-exclamation-triangle"></i>
+            <strong>Warning!</strong> Are you sure you want to delete the county "{{ county.name }}"?
+            This action cannot be undone.
+        </div>
+
+        <dl class="row">
+            <dt class="col-sm-3">Name</dt>
+            <dd class="col-sm-9">{{ county.name }}</dd>
+
+            <dt class="col-sm-3">Code</dt>
+            <dd class="col-sm-9">{{ county.code }}</dd>
+
+            <dt class="col-sm-3">District</dt>
+            <dd class="col-sm-9">{{ county.district.name }}</dd>
+
+            <dt class="col-sm-3">Sub Counties</dt>
+            <dd class="col-sm-9">{{ county.subcounties.count }}</dd>
+        </dl>
+
+        {% if county.subcounties.exists %}
+        <div class="alert alert-warning">
+            <i class="bi bi-info-circle"></i>
+            This county has {{ county.subcounties.count }} sub county(ies) associated with it. 
+            Deleting this county will also remove all associated sub counties and their data.
+        </div>
+        {% endif %}
+
+        <form method="post">
+            {% csrf_token %}
+            <div class="mt-3">
+                <button type="submit" class="btn btn-danger">
+                    <i class="bi bi-trash"></i> Confirm Delete
+                </button>
+                <a href="{% url 'cooperatives:county-detail' county.pk %}" class="btn btn-secondary">
+                    <i class="bi bi-x"></i> Cancel
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %} 

@@ -1,0 +1,73 @@
+{% extends 'base.html' %}
+
+
+{% block page_title %}Members{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">Members</h3>
+                    <div class="card-tools">
+                        <a href="{% url 'cooperatives:member-create' %}" class="btn bg-teal-800 btn-sm">
+                            <i class="bi bi-plus-circle"></i> Add Member
+                        </a>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-bordered table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Name</th>
+                                    <th>Member ID</th>
+                                    <th>Cooperative</th>
+                                    <th>Farmer Group</th>
+                                    <th>Role</th>
+                                    <th>Gender</th>
+                                    <th>Phone Number</th>
+                                    <th>District</th>
+                                    <th>Sub County</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for member in members %}
+                                <tr>
+                                    <td>{{ member.name }}</td>
+                                    <td>{{ member.member_id }}</td>
+                                    <td>{{ member.cooperative.fpo_name }}</td>
+                                    <td>{{ member.farmer_group.name }}</td>
+                                    <td>{{ member.get_role_display }}</td>
+                                    <td>{{ member.get_gender_display }}</td>
+                                    <td>{{ member.phone_number }}</td>
+                                    <td>{{ member.district }}</td>
+                                    <td>{{ member.sub_county }}</td>
+                                    <td>
+                                        <a href="{% url 'cooperatives:member-detail' member.pk %}" class="btn btn-info btn-sm">
+                                            <i class="bi bi-eye"></i>
+                                        </a>
+                                        <a href="{% url 'cooperatives:member-update' member.pk %}" class="btn btn-warning btn-sm">
+                                            <i class="bi bi-pencil"></i>
+                                        </a>
+                                        <a href="{% url 'cooperatives:member-delete' member.pk %}" class="btn btn-danger btn-sm">
+                                            <i class="bi bi-trash"></i>
+                                        </a>
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="10" class="text-center">No members found.</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 
