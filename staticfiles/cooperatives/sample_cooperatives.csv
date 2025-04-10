@@ -1,4 +1,84 @@
-fpo_name,fpo_type,district,sub_county,contact_person,phone_number
-Kampala Coffee Farmers,primary,Kampala,Kawempe,John Doe,0770123456
-Entebbe Dairy Cooperative,secondary,Entebbe,Entebbe Central,Jane Smith,0750123456
-Jinja Rice Farmers,primary,Jinja,Jinja Central,Robert Johnson,0780123456 
+fpo_name,fpo_type,district,sub_county,contact_person,phone_number,created_at
+Agago District Farmers Association,primary,Agago,Kalongo Town Council,Akot Grace,256783704704,2023-03-22
+Gwok manongo cooperative,primary,Agago,Paimol,Robert Othieno,256777481566,2023-03-22
+Lokole cooperative,primary,Agago,Lokole,Robert Johnson,256772720622,2023-03-22
+Pader Shea butter cooperative,primary,Pader,Pader Town Council,Odyek Charles,256782943586,2023-03-30
+Parabong Oil Seed Co-op Ent,primary,Agago,Parabongo,Leonora Abalo,256786475742,2023-04-01
+Omot Farmers Cooperative Society ltd,primary,Agago,Omot,Ongom Charles,256772232145,2023-04-03
+Awere Farmer Cooperative Ltd,primary,Pader,Lunyiri,Oryem Bosco,256775167424,2023-04-03
+Latanya Nen Anyim SBPG,primary,Pader,Latanya,Maurine Otika,,2023-04-06
+Dano aye lonyo,primary,Kitgum,Lagoro,Akanyo Nancy,256773867627,2023-04-12
+Adaa Cung Produce Dealers,primary,Kitgum,Pandwong Division,Ociti Patrick Abel,256773292636,2023-04-13
+Lamwo Shea Nut Farmers Association,primary,Lamwo,Lamwo Town Council,Cavine Pinyoloya,256785293307,2023-05-22
+OLUPE OPONG RIVER BANK WECS,primary,Agago,Omot,Ogwal Tonny,256783419132,2023-05-31
+APWOR - PURANGA PDM SACCO,primary,Pader,Puranga,Otim Alizeo,256776087851,2023-06-02
+Angetta-Olilim PDM savings and Cooperatives LTD,primary,Otuke,Olilim,Alaba Ambrose,256782580110,2023-06-06
+GOT OJWANG - OLILIM PDM SACCO,primary,Otuke,Olilim, Ongora Joel,256777114250,2023-06-06
+ANEPKIDE-OLILIM PDM SACCO LTD,primary,Otuke,Olilim,Okello Geoffrey Mukalo,256780405059,2023-06-06
+ALULA-OLILIM PDM SACCO LTD,primary,Otuke,Olilim,Odong Stephen,256773867627,2023-06-06
+OKEE PARISH PDM SACCO,primary,Otuke,Adwari,Ojede John Bosco,256785966253,2023-06-07
+OKERE PARISH PDM SACCO,primary,Otuke,Adwari,Okello Jimmy Leo,256780386072,2023-06-07
+GWOK MA INONGO COOPERATIVE,primary,Agago,Paimol,Otyeno Robert,256777481566,2023-06-08
+Agwel puranga PDM SACCO,primary,Pader,Puranga,Oryany Alfred Pa-okidi,256785403605,2023-06-09
+OGOWIE-IGWATA GCS LTD,primary,Alebtong,Omoro,,256777194089,2023-06-15
+ABUKAMOLA PDM SACCO LTD,primary,Alebtong,Omoro,Abwang Dennis,256781864627,2023-06-16
+Oculokori PDM Sacco ltd,primary,Alebtong,Omoro,Okote Sam Bob,256777113004,2023-06-16
+LAMINAJIKO-PURANGA PDM SACCO,primary,Pader,Puranga,Opira Justine,256785946487,2023-06-18
+ARWOTNGO PDM SACCO,primary,Otuke,Okwang,Obote Denis,256761303339,2023-06-21
+OPEJAL PDM SACCO,primary,Otuke,Okwang,Ameri Jasper,256777251824,2023-06-21
+OLWORNGU PDM SACCO,primary,Otuke,Okwang,Awongo Solomon,256777597284,2023-06-21
+ABONGOWER PDM SACCO,primary,Otuke,Okwang,Otim Bosco,256772310621,2023-06-21
+Oret puranga PDM SACCO,primary,Pader,Puranga,Owiny Tom,256784500103,2023-06-22
+OLAROKWON PDM SACCO,primary,Otuke,Adwari,Ogwal Opio Alred,256782402573,2023-06-22
+Laminocwida-Puranga PDM SACCO LTD,primary,Pader,Puranga,Odur David,256777546423,2023-07-05
+MOROTO-PALABEK GEM DEVT SACCO,primary,Lamwo,Palabek-Gem,Okot Richard Aoyo,256783946656,2023-07-06
+Lukee-Kotomor PDM SACCO,primary,Agago,Kotomor,Olanya John Bosco,256785419103,2023-07-07
+OLWORNGU PDM SACCO LTD,primary,Otuke,Okwang,Awongo Solomon,256777597284,2023-07-07
+ATECE PDM SACCO LIMITED,primary,Agago,Omot,Okello Bonny,256783856245,2023-07-11
+ALELA-ARUM PDM SACCO LIMITED,primary,Agago,Arum,Apita Charles,256774040786,2023-07-12
+KINENI-PUKOR PDM SACCO,primary,Pader,Pukor,Oryema John Bosco,256782099046,2023-07-13
+Pukor pukor pdm Sacco,primary,Pader,Pukor,Okidi Raymon,256782309111,2023-07-20
+AGELEC-ARUM PDM SACCO,primary,Agago,Arum,Okech John,256765348965,2023-07-21
+ONGANY PADER PDM SACCO,primary,Pader,Pader,Okello Moses Oneka,256777443031,2023-07-21
+ACHOL-PII PDM SACCO,primary,Agago,Orum,Lakidi Joel Okello,256787305596,2023-07-25
+OKWANG T/C PDM SACCO-OKWII WARD,primary,Otuke,Okwang Town Council,Okabo Denis,256785850141,2023-08-12
+OKWANG T/C PDM SACCO-YABWANGI WARD,primary,Otuke,Okwang Town Council,Ewaa Bosco,256780337423,2023-08-12
+PARUMU PARABONGO PDM SACCO,primary,Agago,Parabongo,ACENG CHRISTINE AROMORACH,256788506920,2023-08-14
+NGOTO PDM SACCO,primary,Pader,Atanga,JOK-KENE CHARLES,256777829489,2023-08-17
+OPATE PDM SACCO,primary,Pader,Atanga,Oyoo Morrish,256770343694,2023-08-17
+LAWIYADUL PDM SACCO,primary,Pader,Atanga,OWONA CEASAR,256782468372,2023-08-17
+WIEDWOL LUKOLE COOPERATIVE,primary,Agago,Lokole,OKOT RICHARD,256780343190,2023-08-17
+PAKOR PDM SACCO,primary,Agago,Parabongo,OPIYO SEVERINO,256774581206,2023-08-24
+ACORO PADER TOWN COUNCIL PDM SACCO,primary,Pader,Pader Town Council,SANTONINO OKOT,256786098066,2023-08-29
+AMYEL-LAPONO PDM SACCO,primary,Agago,Lapono,OMOL GEOFFREY,256783556572,2023-09-15
+OGOLE-LAPONO PDM SACCO,primary,Agago,Lapono,OCEN PETER,256763812320,2023-09-15
+NGORA PDM SACCO,primary,Agago,Agago Town Council,ABURA PAUL,256782309622,2023-09-23
+KAKET PDM SACCO,primary,Agago,Lapono,Okwara Denis,256789812816,2023-11-07
+TAMP PIWA COOPERATIVE LIMITED,primary,Agago,Lokole,OCADA ALESIO,256393243743,2024-04-03
+KET CAN ITIC,primary,Kitgum,Lagoro,,,2024-04-07
+PE IKOK ANGEE,primary,Kitgum,Lagoro,,,2024-04-07
+RIBE AYE TEKO,primary,Kitgum,Lagoro,,,2024-04-07
+ORYEM CAN,primary,Kitgum,Lagoro,,,2024-04-07
+OTAM PIWA,primary,Kitgum,Lagoro,,,2024-04-07
+AGAGO DFA,primary,Agago,Kuywee,,,2024-04-07
+APO LACEN,primary,Kitgum,Lagoro,,,2024-04-07
+AMINE KIKOMA,primary,Kitgum,Lagoro,,,2024-04-11
+TUTE PO KWO,primary,Kitgum,Lagoro,,,2024-04-11
+WANENO ANYIM,primary,Kitgum,Lagoro,,,2024-04-11
+TIM KI KOMI,primary,Kitgum,Lagoro,,,2024-04-11
+OREM CAN,primary,Kitgum,Lagoro,,,2024-04-11
+LUWEE KOTOMOR,primary,Agago,Kotomor,,,2024-04-11
+ANGETTA PDM,primary,Otuke,Olilim,,,2024-04-11
+GOTOJWANG,primary,Otuke,Olilim,,,2024-04-11
+OPO LACAN,primary,Kitgum,Lagoro,,,2024-04-11
+DIYO CWINY BER,primary,Kitgum,Lagoro,,,2024-04-11
+LAWIYEADUL,primary,Pader,Atanga,,,2024-04-11
+PI GANG WA YOUTH,primary,Kitgum,Lagoro,,,2024-04-11
+PIT TEK,primary,Kitgum,Lagoro,,,2024-04-11
+NEN ANYIM,primary,Kitgum,Lagoro,,,2024-04-11
+KET CWINY,primary,Kitgum,Lagoro,,,2024-04-11
+ATEK KI LWAK,primary,Kitgum,Lagoro,,,2024-04-11
+Biwang Cooperative PDM Sacco,primary,Agago,Lira-Palwo,,,2024-04-12
+Onyut Maa Cooperative,primary,Agago,Patongo,,,2024-05-01
+LATANYA FARMERS COOPERATIVE,primary,Pader,Latanya,,,2024-05-20
+LATANYA SAVING COOPERATIVE,primary,Pader,Latanya,,,2024-05-20
