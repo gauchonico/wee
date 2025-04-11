@@ -74,6 +74,7 @@ urlpatterns = [
     path('members/create/', views.MemberCreateView.as_view(), name='member-create'),
     path('members/<int:pk>/update/', views.MemberUpdateView.as_view(), name='member-update'),
     path('members/<int:pk>/delete/', views.MemberDeleteView.as_view(), name='member-delete'),
+    path('members/bulk-upload/', views.MemberBulkUploadView.as_view(), name='member-bulk-upload'),
     
     # Product URLs
     path('products/', views.ProductListView.as_view(), name='product-list'),

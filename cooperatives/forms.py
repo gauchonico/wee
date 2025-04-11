@@ -120,20 +120,39 @@ class FarmerGroupForm(forms.ModelForm):
 class MemberForm(forms.ModelForm):
     class Meta:
         model = Member
-        fields = ['name', 'member_id', 'gender', 'phone_number', 'role', 'district','county', 'sub_county', 'village', 'cooperative', 'farmer_group']
+        fields = [
+            'first_name', 'surname', 'other_name', 'member_id', 'email',
+            'phone_number', 'gender', 'role', 'district', 'county',
+            'sub_county', 'village', 'cooperative', 'farmer_group',
+            'gps_coordinates', 'id_type', 'id_number', 'is_verified',
+            'has_mobile_money', 'is_refugee', 'land_acres', 'shea_trees',
+            'beehives', 'products'
+        ]
         widgets = {
-            'name': forms.TextInput(attrs={'class': 'form-control'}),
+            'first_name': forms.TextInput(attrs={'class': 'form-control'}),
+            'surname': forms.TextInput(attrs={'class': 'form-control'}),
+            'other_name': forms.TextInput(attrs={'class': 'form-control'}),
             'member_id': forms.TextInput(attrs={'class': 'form-control'}),
-            'gender': forms.Select(attrs={'class': 'form-control'}),
+            'email': forms.EmailInput(attrs={'class': 'form-control'}),
             'phone_number': forms.TextInput(attrs={'class': 'form-control'}),
+            'gender': forms.Select(attrs={'class': 'form-control'}),
             'role': forms.Select(attrs={'class': 'form-control'}),
             'district': forms.Select(attrs={'class': 'form-control'}),
+            'county': forms.Select(attrs={'class': 'form-control'}),
             'sub_county': forms.Select(attrs={'class': 'form-control'}),
-            'county':forms.Select(attrs={'class':'form-control'}),
             'village': forms.Select(attrs={'class': 'form-control'}),
             'cooperative': forms.Select(attrs={'class': 'form-control'}),
             'farmer_group': forms.Select(attrs={'class': 'form-control'}),
-            
+            'gps_coordinates': forms.TextInput(attrs={'class': 'form-control'}),
+            'id_type': forms.Select(attrs={'class': 'form-control'}),
+            'id_number': forms.TextInput(attrs={'class': 'form-control'}),
+            'is_verified': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+            'has_mobile_money': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+            'is_refugee': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+            'land_acres': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
+            'shea_trees': forms.NumberInput(attrs={'class': 'form-control'}),
+            'beehives': forms.NumberInput(attrs={'class': 'form-control'}),
+            'products': forms.SelectMultiple(attrs={'class': 'form-control'}),
         }
 
     def __init__(self, *args, **kwargs):
@@ -239,4 +258,17 @@ class FarmerGroupBulkUploadForm(forms.Form):
         label='CSV File',
         help_text='Upload a CSV file with the following columns: name, code, cooperative, district, sub_county, parish, village, contact_person, phone_number, product, is_VSLA, is_active',
         widget=forms.FileInput(attrs={'class': 'form-control'})
-    ) 
+    )
+
+class MemberBulkUploadForm(forms.Form):
+    csv_file = forms.FileField(
+        label='Select CSV File',
+        help_text='Upload a CSV file containing member information.',
+        widget=forms.FileInput(attrs={'class': 'form-control', 'accept': '.csv'})
+    )
+
+    def clean_csv_file(self):
+        csv_file = self.cleaned_data['csv_file']
+        if not csv_file.name.endswith('.csv'):
+            raise forms.ValidationError('File must be a CSV document.')
+        return csv_file 

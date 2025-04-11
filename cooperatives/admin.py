@@ -54,9 +54,13 @@ class FarmerGroupAdmin(admin.ModelAdmin):
 
 @admin.register(Member)
 class MemberAdmin(admin.ModelAdmin):
-    list_display = ('name', 'member_id', 'gender', 'phone_number', 'role', 'district', 'sub_county', 'cooperative', 'farmer_group')
-    list_filter = ('gender', 'role', 'cooperative', 'farmer_group', 'district', 'sub_county')
-    search_fields = ('name', 'member_id', 'phone_number')
+    list_display = ('get_full_name', 'member_id', 'cooperative', 'farmer_group', 'district', 'sub_county', 'village', 'phone_number')
+    list_filter = ('cooperative', 'farmer_group', 'district', 'sub_county', 'village')
+    search_fields = ('first_name', 'surname', 'member_id', 'phone_number')
+    
+    def get_full_name(self, obj):
+        return f"{obj.surname}, {obj.first_name}"
+    get_full_name.short_description = 'Name'
 
 @admin.register(Product)
 class ProductAdmin(admin.ModelAdmin):

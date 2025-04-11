@@ -123,25 +123,10 @@ def sidebar_menu(request):
 		'text': 'Users',
 		'is_header': 1
 	}, {
-		'url': '/profile',
-		'icon': 'bi bi-people',
-		'text': 'Profile',
-		'name': 'profile'
-	}, {
-		'url': '/calendar',
-		'icon': 'bi bi-calendar4',
-		'text': 'Calendar',
-		'name': 'calendar'
-	}, {
 		'url': '/settings',
 		'icon': 'bi bi-gear',
 		'text': 'Settings',
 		'name': 'settings'
-	}, {
-		'url': '/helper',
-		'icon': 'bi bi-gem',
-		'text': 'Helper',
-		'name': 'helper'
 	}]
 	
 	resolved_path = resolve(request.path_info)
