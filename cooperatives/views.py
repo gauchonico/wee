@@ -20,6 +20,7 @@ import io
 from datetime import datetime
 from django.db.models import Q
 from django.views.generic.edit import FormView
+import random
 
 # District Views
 class DistrictListView(CustomLoginRequiredMixin, ListView):
@@ -791,7 +792,7 @@ class CooperativeBulkUploadView(CustomLoginRequiredMixin, View):
             
             for row in reader:
                 try:
-                    # Get district and sub_county objects
+                    # Get location information
                     district = District.objects.filter(name=row['district']).first()
                     sub_county = SubCounty.objects.filter(name=row['sub_county']).first()
                     
@@ -810,6 +811,14 @@ class CooperativeBulkUploadView(CustomLoginRequiredMixin, View):
                             errors.append(f"Row {reader.line_num}: Invalid date format. Use YYYY-MM-DD")
                             continue
                     
+                    # Get cooperative
+                    try:
+                        cooperative = Cooperative.objects.get(fpo_name=row['fpo_name'])
+                    except Cooperative.DoesNotExist:
+                        error_messages.append(f"Row {reader.line_num}: Cooperative '{row['fpo_name']}' not found")
+                        error_count += 1
+                        continue
+                    
                     # Create cooperative
                     cooperative = Cooperative.objects.create(
                         fpo_name=row['fpo_name'],
@@ -818,7 +827,6 @@ class CooperativeBulkUploadView(CustomLoginRequiredMixin, View):
                         sub_county=sub_county,
                         contact_person=row['contact_person'],
                         phone_number=row['phone_number'],
-            
                     )
                     
                     # Update created_at if provided
@@ -1058,22 +1066,31 @@ class FarmerGroupBulkUploadView(CustomLoginRequiredMixin, View):
                     
                     # Get the parish if provided
                     parish = None
-                    if row.get('parish'):
+                    parish_name = row.get('parish', '').strip()
+                    
+                    if parish_name:  # Only process parish if it's not blank
                         try:
-                            # Get the first parish that matches the name and belongs to the correct sub-county
-                            parish = Parish.objects.filter(
-                                name=row['parish'].strip(),
-                                subcounty=sub_county
-                            ).first()
+                            # Try different possible column names for parish
+                            if not parish_name:
+                                for possible_name in ['parish', 'parish_name', 'parishname']:
+                                    if row.get(possible_name):
+                                        parish_name = row[possible_name].strip()
+                                        break
                             
-                            if not parish:
-                                errors.append(f"Parish '{row['parish']}' does not exist in sub-county '{sub_county.name}' for farmer group '{row['name']}'")
-                                error_count += 1
-                                continue
+                            if parish_name:  # Only try to find parish if we have a name
+                                try:
+                                    parish = Parish.objects.get(name=parish_name, subcounty=sub_county)
+                                except Parish.DoesNotExist:
+                                    # If not found in specified sub-county, try to find it in any sub-county
+                                    parish = Parish.objects.filter(name=parish_name).first()
+                                    if parish:
+                                        # Update the sub-county to match the parish's actual sub-county
+                                        sub_county = parish.subcounty
+                                        messages.info(self.request, f"Row {csv_data.line_num}: Parish '{parish_name}' found in sub-county '{sub_county.name}'. Sub-county updated to match.")
+                                    else:
+                                        messages.warning(self.request, f"Row {csv_data.line_num}: Parish '{parish_name}' not found in any sub-county. Skipping parish assignment.")
                         except Exception as e:
-                            errors.append(f"Error finding parish '{row['parish']}' for farmer group '{row['name']}': {str(e)}")
-                            error_count += 1
-                            continue
+                            messages.warning(self.request, f"Row {csv_data.line_num}: Error processing parish: {str(e)}. Skipping parish assignment.")
                     
                     # Get the village if provided
                     village = None
@@ -1094,51 +1111,81 @@ class FarmerGroupBulkUploadView(CustomLoginRequiredMixin, View):
                             error_count += 1
                             continue
                     
-                    # Generate a unique code if the code already exists
-                    original_code = row['code']
-                    unique_code = self.generate_unique_code(original_code)
-                    
-                    # Parse the created_at date if provided
-                    created_at = None
-                    if row.get('created_at'):
+                    # Handle farmer group - now optional
+                    farmer_group = None
+                    if row.get('farmer_group_name'):
                         try:
-                            # Try different date formats
-                            date_formats = ['%Y-%m-%d', '%d-%m-%Y', '%m/%d/%Y', '%d/%m/%Y', '%Y/%m/%d']
-                            for date_format in date_formats:
-                                try:
-                                    created_at = datetime.strptime(row['created_at'].strip(), date_format).date()
-                                    break
-                                except ValueError:
-                                    continue
-                            
-                            if not created_at:
-                                errors.append(f"Invalid date format for '{row['name']}'. Use YYYY-MM-DD, DD-MM-YYYY, or MM/DD/YYYY")
+                            farmer_group = FarmerGroup.objects.get(
+                                name=row['farmer_group_name'],
+                                cooperative=cooperative
+                            )
+                        except FarmerGroup.DoesNotExist:
+                            # Create new farmer group if it doesn't exist
+                            try:
+                                # Generate a unique code for the farmer group
+                                base_code = f"{cooperative.fpo_name[:3].upper()}-{row['farmer_group_name'][:3].upper()}"
+                                unique_code = self.generate_unique_code(base_code)
+                                
+                                farmer_group = FarmerGroup.objects.create(
+                                    name=row['farmer_group_name'],
+                                    cooperative=cooperative,
+                                    district=district,
+                                    sub_county=sub_county,
+                                    village=village,
+                                    code=unique_code
+                                )
+                                messages.info(self.request, f"Row {csv_data.line_num}: Created new farmer group '{row['farmer_group_name']}' in cooperative '{cooperative.fpo_name}'")
+                            except Exception as e:
+                                error_messages.append(f"Row {csv_data.line_num}: Failed to create farmer group '{row['farmer_group_name']}': {str(e)}")
                                 error_count += 1
                                 continue
-                        except Exception as e:
-                            errors.append(f"Error parsing date for '{row['name']}': {str(e)}")
-                            error_count += 1
-                            continue
-                    
-                    # Create the farmer group
-                    farmer_group = FarmerGroup.objects.create(
-                        name=row['name'].strip(),
-                        code=unique_code,
+
+                    # Handle products (comma-separated list)
+                    products = []
+                    if row.get('products'):
+                        # Remove any quotes and whitespace
+                        products_str = row['products'].strip().strip('"\'')
+                        # Split by comma and clean each product name
+                        product_names = [name.strip() for name in products_str.split(',')]
+                        # Get all products that match any of the names
+                        products = Product.objects.filter(name__in=product_names)
+                        
+                        # Log warning for any products not found
+                        found_products = set(products.values_list('name', flat=True))
+                        missing_products = set(product_names) - found_products
+                        if missing_products:
+                            error_messages.append(f"Row {csv_data.line_num}: Products not found: {', '.join(missing_products)}")
+
+                    # Create member instance
+                    member = Member.objects.create(
+                        member_id=row['userId'],
+                        first_name=row['firstname'],
+                        surname=row['surname'],
+                        other_name=row.get('othername', ''),
+                        date_of_birth=date_of_birth,
+                        email=row.get('email', ''),
+                        phone_number=row['phone_number'],
+                        gender=gender,
+                        id_number=row['id_number'],
                         cooperative=cooperative,
+                        farmer_group=farmer_group,  # This is now optional
                         district=district,
+                        county=county,
                         sub_county=sub_county,
-                        parish=parish,
                         village=village,
-                        contact_person=row['contact_person'].strip(),
-                        phone_number=row['phone_number'].strip()
+                        gps_coordinates=row['gps_coordinates'],
+                        role=row['role'].lower(),
+                        land_acres=float(row['land_acreage'] or 0),
+                        shea_trees=int(row['shea_trees'] or 0),
+                        beehives=int(row['beehives'] or 0),
+                        created_by=self.request.user
                     )
-                    
-                    # Set the created_at date if provided
-                    if created_at:
-                        farmer_group.created_at = created_at
-                        farmer_group.save()
-                    
+
+                    # Add products if any were found
+                    if products:
+                        member.products.set(products)
                     success_count += 1
+
                 except KeyError as e:
                     errors.append(f"Missing required column: {str(e)}")
                     error_count += 1
@@ -1229,6 +1276,14 @@ class MemberBulkUploadView(CustomLoginRequiredMixin, FormView):
                 # Get location information
                 district = District.objects.get(name=row['district'])
                 
+                # Get cooperative
+                try:
+                    cooperative = Cooperative.objects.get(fpo_name=row['cooperative_name'])
+                except Cooperative.DoesNotExist:
+                    error_messages.append(f"Row {csv_data.line_num}: Cooperative '{row['cooperative_name']}' not found")
+                    error_count += 1
+                    continue
+                
                 # Get county with better error handling
                 try:
                     # First try to get county in the specified district
@@ -1241,42 +1296,76 @@ class MemberBulkUploadView(CustomLoginRequiredMixin, FormView):
                         district = county.district
                         messages.info(self.request, f"Row {csv_data.line_num}: County '{row['county']}' found in district '{district.name}'. District updated to match.")
                     else:
-                        error_messages.append(f"Row {csv_data.line_num}: County '{row['county']}' not found in any district")
+                        # Create the county if it doesn't exist
+                        try:
+                            county = County.objects.create(
+                                name=row['county'],
+                                district=district,
+                                code=f"{district.code[:3]}-{row['county'][:3].upper()}"
+                            )
+                            messages.info(self.request, f"Row {csv_data.line_num}: Created new county '{row['county']}' in district '{district.name}'")
+                        except Exception as e:
+                            error_messages.append(f"Row {csv_data.line_num}: Failed to create county '{row['county']}': {str(e)}")
+                            error_count += 1
+                            continue
+                
+                # Handle sub-county
+                try:
+                    # First try to get sub-county in the specified county
+                    sub_county = SubCounty.objects.get(name=row['subcounty'], county=county)
+                except SubCounty.DoesNotExist:
+                    # If not found in specified county, try to find it in any county
+                    sub_county = SubCounty.objects.filter(name=row['subcounty']).first()
+                    if sub_county:
+                        # Update the county to match the sub-county's actual county
+                        county = sub_county.county
+                        messages.info(self.request, f"Row {csv_data.line_num}: Sub-county '{row['subcounty']}' found in county '{county.name}'. County updated to match.")
+                    else:
+                        error_messages.append(f"Row {csv_data.line_num}: Sub-county '{row['subcounty']}' not found in any county")
                         error_count += 1
                         continue
                 
-                try:
-                    sub_county = SubCounty.objects.get(name=row['subcounty'], county=county)
-                except SubCounty.DoesNotExist:
-                    error_messages.append(f"Row {csv_data.line_num}: Sub-county '{row['subcounty']}' not found in county '{county.name}'")
-                    error_count += 1
-                    continue
+                # Handle parish
+                parish = None
+                parish_name = row.get('parish', '').strip()
                 
-                # Get or create parish
-                try:
-                    parish = Parish.objects.get(name=row['parish'], subcounty=sub_county)
-                except Parish.DoesNotExist:
-                    error_messages.append(f"Row {csv_data.line_num}: Parish '{row['parish']}' not found in sub-county '{sub_county.name}'")
-                    error_count += 1
-                    continue
+                if parish_name:  # Only process parish if it's not blank
+                    try:
+                        # Try different possible column names for parish
+                        if not parish_name:
+                            for possible_name in ['parish', 'parish_name', 'parishname']:
+                                if row.get(possible_name):
+                                    parish_name = row[possible_name].strip()
+                                    break
+                        
+                        if parish_name:  # Only try to find parish if we have a name
+                            try:
+                                parish = Parish.objects.get(name=parish_name, subcounty=sub_county)
+                            except Parish.DoesNotExist:
+                                # If not found in specified sub-county, try to find it in any sub-county
+                                parish = Parish.objects.filter(name=parish_name).first()
+                                if parish:
+                                    # Update the sub-county to match the parish's actual sub-county
+                                    sub_county = parish.subcounty
+                                    messages.info(self.request, f"Row {csv_data.line_num}: Parish '{parish_name}' found in sub-county '{sub_county.name}'. Sub-county updated to match.")
+                                else:
+                                    messages.warning(self.request, f"Row {csv_data.line_num}: Parish '{parish_name}' not found in any sub-county. Skipping parish assignment.")
+                    except Exception as e:
+                        messages.warning(self.request, f"Row {csv_data.line_num}: Error processing parish: {str(e)}. Skipping parish assignment.")
                 
-                # Get or create village
+                # Handle village
                 village_name = row['village'].strip()
                 try:
-                    village = Village.objects.get(name=village_name, parish=parish)
+                    village = Village.objects.get(name=village_name, parish=parish) if parish else None
                 except Village.DoesNotExist:
                     # Create the village if it doesn't exist
                     try:
-                        # Generate a unique code for the village
-                        base_code = village_name[:3].upper()  # Use first 3 letters of village name
-                        unique_code = self.generate_unique_code(base_code)
-                        
                         village = Village.objects.create(
                             name=village_name,
-                            code=unique_code,
-                            parish=parish
+                            parish=parish,
+                            code=f"{parish.code}-{village_name[:3].upper()}" if parish else f"{sub_county.code}-{village_name[:3].upper()}"
                         )
-                        created_villages.append(f"{village_name} in {parish.name}")
+                        messages.info(self.request, f"Row {csv_data.line_num}: Created new village '{village_name}' in {'parish ' + parish.name if parish else 'sub-county ' + sub_county.name}")
                     except Exception as e:
                         error_messages.append(f"Row {csv_data.line_num}: Failed to create village '{village_name}': {str(e)}")
                         error_count += 1
@@ -1291,9 +1380,25 @@ class MemberBulkUploadView(CustomLoginRequiredMixin, FormView):
                             cooperative=cooperative
                         )
                     except FarmerGroup.DoesNotExist:
-                        error_messages.append(f"Row {csv_data.line_num}: Farmer group '{row['farmer_group_name']}' not found in cooperative '{cooperative.fpo_name}'")
-                        error_count += 1
-                        continue
+                        # Create new farmer group if it doesn't exist
+                        try:
+                            # Generate a unique code for the farmer group
+                            base_code = f"{cooperative.fpo_name[:3].upper()}-{row['farmer_group_name'][:3].upper()}"
+                            unique_code = self.generate_unique_code(base_code)
+                            
+                            farmer_group = FarmerGroup.objects.create(
+                                name=row['farmer_group_name'],
+                                cooperative=cooperative,
+                                district=district,
+                                sub_county=sub_county,
+                                village=village,
+                                code=unique_code
+                            )
+                            messages.info(self.request, f"Row {csv_data.line_num}: Created new farmer group '{row['farmer_group_name']}' in cooperative '{cooperative.fpo_name}'")
+                        except Exception as e:
+                            error_messages.append(f"Row {csv_data.line_num}: Failed to create farmer group '{row['farmer_group_name']}': {str(e)}")
+                            error_count += 1
+                            continue
 
                 # Handle products (comma-separated list)
                 products = []
@@ -1372,3 +1477,49 @@ class MemberBulkUploadView(CustomLoginRequiredMixin, FormView):
                 messages.warning(self.request, f"... and {len(error_messages) - 5} more errors")
 
         return super().form_valid(form)
+
+class MemberProductAssignmentView(CustomLoginRequiredMixin, View):
+    template_name = 'cooperatives/member_product_assignment.html'
+    success_url = reverse_lazy('cooperatives:member-list')
+
+    def get(self, request):
+        # Get all members without products
+        members_without_products = Member.objects.filter(products__isnull=True)
+        context = {
+            'members_count': members_without_products.count()
+        }
+        return render(request, self.template_name, context)
+
+    def post(self, request):
+        # Get the products
+        try:
+            maize = Product.objects.get(name='Maize')
+            sunflower = Product.objects.get(name='Sunflower')
+            shea_nuts = Product.objects.get(name='Shea nuts')
+            simsim = Product.objects.get(name='Simsim')
+            # honey = Product.objects.get(name='Honey')
+        except Product.DoesNotExist:
+            messages.error(request, "Required products (Maize, Sunflower, Shea Nuts, Simsim) not found in the database.")
+            return redirect(self.success_url)
+
+        # Get all members without products
+        members_without_products = Member.objects.filter(products__isnull=True)
+        total_members = members_without_products.count()
+        assigned_count = 0
+
+        for member in members_without_products:
+            # Randomly decide how many products to assign (1-4)
+            num_products = random.randint(1, 4)
+            
+            # Create a list of all possible products
+            available_products = [maize, sunflower, shea_nuts, simsim]
+            
+            # Randomly select products
+            selected_products = random.sample(available_products, num_products)
+            
+            # Assign the products to the member
+            member.products.set(selected_products)
+            assigned_count += 1
+
+        messages.success(request, f"Successfully assigned products to {assigned_count} out of {total_members} members without products.")
+        return redirect(self.success_url)

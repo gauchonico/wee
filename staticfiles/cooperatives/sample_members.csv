@@ -1,0 +1,4 @@
+userId,cooperative_name,farmer_group_name,surname,firstname,othername,date_of_birth,id_number,phone_number,email,district,county,subcounty,village,gps_coordinates,role,land_acreage,shea_trees,beehives,products,gender
+MEM001,Kampala Coffee Farmers,Kawempe Coffee Group,Doe,John,Peter,1985-06-15,CM12345678,256770123456,john.doe@email.com,Kampala,Kawempe,Kawempe North,Kyebando,2.90091247,33.35992853,member,2.5,0,5,"Coffee, Honey",M
+MEM002,Entebbe Dairy Cooperative,Entebbe Dairy Group,Smith,Jane,,1990-03-22,DF98765432,256750123456,jane.smith@email.com,Entebbe,Entebbe,Entebbe Central,Central,3.10294,33.06032,secretary,1.5,0,0,Dairy,F
+MEM003,Jinja Rice Farmers,,Johnson,Robert,James,1978-11-30,RF45678901,256780123456,robert.j@email.com,Jinja,Jinja,Jinja Central,Main,2.89123,33.12345,chairman,5.0,10,3,"Rice, Honey",M 

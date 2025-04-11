@@ -191,11 +191,11 @@ class Member(models.Model):
     )
     
     ROLE_CHOICES = (
-        ('chairman', 'Chairman'),
+        ('chairperson', 'Chairperson'),
         ('vice', 'Vice'),
         ('secretary', 'Secretary'),
         ('treasurer', 'Treasurer'),
-        ('committee', 'Committee'),
+        ('committee', 'Committee Member'),
         ('member', 'Member'),
     )
     
