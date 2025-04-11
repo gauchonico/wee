@@ -228,6 +228,7 @@ class VillageListView(CustomLoginRequiredMixin, ListView):
     model = Village
     template_name = 'cooperatives/village_list.html'
     context_object_name = 'villages'
+    ordering = ['parish__name', 'name']
 
 class VillageDetailView(CustomLoginRequiredMixin, DetailView):
     model = Village
@@ -239,17 +240,29 @@ class VillageCreateView(CustomLoginRequiredMixin, CreateView):
     form_class = VillageForm
     template_name = 'cooperatives/village_form.html'
     success_url = reverse_lazy('cooperatives:village-list')
+    
+    def form_valid(self, form):
+        messages.success(self.request, 'Village created successfully.')
+        return super().form_valid(form)
 
 class VillageUpdateView(CustomLoginRequiredMixin, UpdateView):
     model = Village
     form_class = VillageForm
     template_name = 'cooperatives/village_form.html'
     success_url = reverse_lazy('cooperatives:village-list')
+    
+    def form_valid(self, form):
+        messages.success(self.request, 'Village updated successfully.')
+        return super().form_valid(form)
 
 class VillageDeleteView(CustomLoginRequiredMixin, DeleteView):
     model = Village
     template_name = 'cooperatives/village_confirm_delete.html'
     success_url = reverse_lazy('cooperatives:village-list')
+    
+    def delete(self, request, *args, **kwargs):
+        messages.success(self.request, 'Village deleted successfully.')
+        return super().delete(request, *args, **kwargs)
 
 class VillageBulkUploadView(CustomLoginRequiredMixin, View):
     template_name = 'cooperatives/village_bulk_upload.html'
@@ -1150,14 +1163,27 @@ class MemberBulkUploadView(CustomLoginRequiredMixin, FormView):
     form_class = MemberBulkUploadForm
     success_url = reverse_lazy('cooperatives:member-list')
 
+    def generate_unique_code(self, base_code):
+        """Generate a unique code by appending a number if the code already exists."""
+        counter = 1
+        new_code = base_code
+        while Village.objects.filter(code=new_code).exists():
+            new_code = f"{base_code}{counter}"
+            counter += 1
+        return new_code
+
     def form_valid(self, form):
         csv_file = form.cleaned_data['csv_file']
         decoded_file = csv_file.read().decode('utf-8')
-        csv_data = csv.DictReader(io.StringIO(decoded_file))
+        io_string = io.StringIO(decoded_file)
+        csv_data = csv.DictReader(io_string)
         
         success_count = 0
         error_count = 0
+        skipped_count = 0
         error_messages = []
+        skipped_members = []
+        created_villages = []
 
         for row in csv_data:
             try:
@@ -1171,7 +1197,7 @@ class MemberBulkUploadView(CustomLoginRequiredMixin, FormView):
                 if row.get('date_of_birth'):
                     try:
                         # Try different date formats
-                        date_formats = ['%Y-%m-%d', '%d-%m-%Y', '%m/%d/%Y', '%d/%m/%Y']
+                        date_formats = ['%Y-%m-%d', '%d-%m-%Y', '%m/%d/%Y', '%d/%m/%Y', '%Y/%m/%d']
                         for date_format in date_formats:
                             try:
                                 date_of_birth = datetime.strptime(row['date_of_birth'].strip(), date_format).date()
@@ -1184,24 +1210,106 @@ class MemberBulkUploadView(CustomLoginRequiredMixin, FormView):
                     except Exception as e:
                         raise ValueError(f"Error parsing date of birth: {str(e)}")
 
-                # Get related objects
-                cooperative = Cooperative.objects.get(fpo_name=row['cooperative_name'])
+                # Check for duplicate member_id
+                if Member.objects.filter(member_id=row['userId']).exists():
+                    skipped_members.append(f"{row['firstname']} {row['surname']} (ID: {row['userId']})")
+                    skipped_count += 1
+                    continue
+
+                # Check for duplicate name + id_number combination
+                if Member.objects.filter(
+                    first_name=row['firstname'],
+                    surname=row['surname'],
+                    id_number=row['id_number']
+                ).exists():
+                    skipped_members.append(f"{row['firstname']} {row['surname']} (ID Number: {row['id_number']})")
+                    skipped_count += 1
+                    continue
+
+                # Get location information
                 district = District.objects.get(name=row['district'])
-                county = County.objects.get(name=row['county'], district=district)
-                sub_county = SubCounty.objects.get(name=row['subcounty'], county=county)
-                village = Village.objects.get(name=row['village'])
                 
-                # Handle optional farmer group
+                # Get county with better error handling
+                try:
+                    # First try to get county in the specified district
+                    county = County.objects.get(name=row['county'], district=district)
+                except County.DoesNotExist:
+                    # If not found in specified district, try to find it in any district
+                    county = County.objects.filter(name=row['county']).first()
+                    if county:
+                        # Update the district to match the county's actual district
+                        district = county.district
+                        messages.info(self.request, f"Row {csv_data.line_num}: County '{row['county']}' found in district '{district.name}'. District updated to match.")
+                    else:
+                        error_messages.append(f"Row {csv_data.line_num}: County '{row['county']}' not found in any district")
+                        error_count += 1
+                        continue
+                
+                try:
+                    sub_county = SubCounty.objects.get(name=row['subcounty'], county=county)
+                except SubCounty.DoesNotExist:
+                    error_messages.append(f"Row {csv_data.line_num}: Sub-county '{row['subcounty']}' not found in county '{county.name}'")
+                    error_count += 1
+                    continue
+                
+                # Get or create parish
+                try:
+                    parish = Parish.objects.get(name=row['parish'], subcounty=sub_county)
+                except Parish.DoesNotExist:
+                    error_messages.append(f"Row {csv_data.line_num}: Parish '{row['parish']}' not found in sub-county '{sub_county.name}'")
+                    error_count += 1
+                    continue
+                
+                # Get or create village
+                village_name = row['village'].strip()
+                try:
+                    village = Village.objects.get(name=village_name, parish=parish)
+                except Village.DoesNotExist:
+                    # Create the village if it doesn't exist
+                    try:
+                        # Generate a unique code for the village
+                        base_code = village_name[:3].upper()  # Use first 3 letters of village name
+                        unique_code = self.generate_unique_code(base_code)
+                        
+                        village = Village.objects.create(
+                            name=village_name,
+                            code=unique_code,
+                            parish=parish
+                        )
+                        created_villages.append(f"{village_name} in {parish.name}")
+                    except Exception as e:
+                        error_messages.append(f"Row {csv_data.line_num}: Failed to create village '{village_name}': {str(e)}")
+                        error_count += 1
+                        continue
+                
+                # Handle farmer group - now optional
                 farmer_group = None
                 if row.get('farmer_group_name'):
-                    farmer_group = FarmerGroup.objects.get(
-                        name=row['farmer_group_name'],
-                        cooperative=cooperative
-                    )
+                    try:
+                        farmer_group = FarmerGroup.objects.get(
+                            name=row['farmer_group_name'],
+                            cooperative=cooperative
+                        )
+                    except FarmerGroup.DoesNotExist:
+                        error_messages.append(f"Row {csv_data.line_num}: Farmer group '{row['farmer_group_name']}' not found in cooperative '{cooperative.fpo_name}'")
+                        error_count += 1
+                        continue
 
                 # Handle products (comma-separated list)
-                product_names = [name.strip() for name in row['products'].split(',')]
-                products = Product.objects.filter(name__in=product_names)
+                products = []
+                if row.get('products'):
+                    # Remove any quotes and whitespace
+                    products_str = row['products'].strip().strip('"\'')
+                    # Split by comma and clean each product name
+                    product_names = [name.strip() for name in products_str.split(',')]
+                    # Get all products that match any of the names
+                    products = Product.objects.filter(name__in=product_names)
+                    
+                    # Log warning for any products not found
+                    found_products = set(products.values_list('name', flat=True))
+                    missing_products = set(product_names) - found_products
+                    if missing_products:
+                        error_messages.append(f"Row {csv_data.line_num}: Products not found: {', '.join(missing_products)}")
 
                 # Create member instance
                 member = Member.objects.create(
@@ -1215,7 +1323,7 @@ class MemberBulkUploadView(CustomLoginRequiredMixin, FormView):
                     gender=gender,
                     id_number=row['id_number'],
                     cooperative=cooperative,
-                    farmer_group=farmer_group,
+                    farmer_group=farmer_group,  # This is now optional
                     district=district,
                     county=county,
                     sub_county=sub_county,
@@ -1228,13 +1336,12 @@ class MemberBulkUploadView(CustomLoginRequiredMixin, FormView):
                     created_by=self.request.user
                 )
 
-                # Add products
-                member.products.set(products)
+                # Add products if any were found
+                if products:
+                    member.products.set(products)
                 success_count += 1
 
-            except (Cooperative.DoesNotExist, District.DoesNotExist,
-                    County.DoesNotExist, SubCounty.DoesNotExist,
-                    Village.DoesNotExist, FarmerGroup.DoesNotExist) as e:
+            except (Cooperative.DoesNotExist, District.DoesNotExist) as e:
                 error_count += 1
                 error_messages.append(f"Row {csv_data.line_num}: {str(e)}")
             except ValueError as e:
@@ -1247,11 +1354,21 @@ class MemberBulkUploadView(CustomLoginRequiredMixin, FormView):
         # Add messages for user feedback
         if success_count:
             messages.success(self.request, f"Successfully imported {success_count} members.")
+        if created_villages:
+            messages.info(self.request, f"Created {len(created_villages)} new villages:")
+            for village in created_villages:
+                messages.info(self.request, f"- {village}")
+        if skipped_count:
+            messages.warning(self.request, f"Skipped {skipped_count} duplicate members:")
+            for member in skipped_members[:5]:  # Show first 5 skipped members
+                messages.warning(self.request, f"- {member}")
+            if len(skipped_members) > 5:
+                messages.warning(self.request, f"... and {len(skipped_members) - 5} more duplicates")
         if error_count:
             messages.error(self.request, f"Failed to import {error_count} members.")
             for error in error_messages[:5]:  # Show first 5 errors
                 messages.warning(self.request, error)
             if len(error_messages) > 5:
-                messages.warning(self.request, f"... and {len(error_messages) - 5} more errors.")
+                messages.warning(self.request, f"... and {len(error_messages) - 5} more errors")
 
         return super().form_valid(form)

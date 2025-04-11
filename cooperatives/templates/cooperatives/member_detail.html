@@ -28,8 +28,16 @@
                             <h4>Basic Information</h4>
                             <table class="table table-bordered">
                                 <tr>
-                                    <th>Name</th>
-                                    <td>{{ member.name }}</td>
+                                    <th>First Name</th>
+                                    <td>{{ member.first_name }}</td>
+                                </tr>
+                                <tr>
+                                    <th>Surname</th>
+                                    <td>{{ member.surname }}</td>
+                                </tr>
+                                <tr>
+                                    <th>Other Name</th>
+                                    <td>{{ member.other_name|default:"-" }}</td>
                                 </tr>
                                 <tr>
                                     <th>Member ID</th>
@@ -38,6 +46,14 @@
                                 <tr>
                                     <th>Gender</th>
                                     <td>{{ member.get_gender_display }}</td>
+                                </tr>
+                                <tr>
+                                    <th>Date of Birth</th>
+                                    <td>{{ member.date_of_birth|date:"Y-m-d"|default:"-" }}</td>
+                                </tr>
+                                <tr>
+                                    <th>Email</th>
+                                    <td>{{ member.email|default:"-" }}</td>
                                 </tr>
                                 <tr>
                                     <th>Phone Number</th>
@@ -57,8 +73,20 @@
                                     <td>{{ member.district }}</td>
                                 </tr>
                                 <tr>
+                                    <th>County</th>
+                                    <td>{{ member.county|default:"-" }}</td>
+                                </tr>
+                                <tr>
                                     <th>Sub County</th>
                                     <td>{{ member.sub_county }}</td>
+                                </tr>
+                                <tr>
+                                    <th>Village</th>
+                                    <td>{{ member.village|default:"-" }}</td>
+                                </tr>
+                                <tr>
+                                    <th>GPS Coordinates</th>
+                                    <td>{{ member.gps_coordinates|default:"-" }}</td>
                                 </tr>
                             </table>
                             
@@ -72,6 +100,77 @@
                                     <th>Farmer Group</th>
                                     <td>{{ member.farmer_group.name }}</td>
                                 </tr>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div class="row mt-4">
+                        <div class="col-md-6">
+                            <h4>Identification Details</h4>
+                            <table class="table table-bordered">
+                                <tr>
+                                    <th>ID Type</th>
+                                    <td>{{ member.get_id_type_display|default:"-" }}</td>
+                                </tr>
+                                <tr>
+                                    <th>ID Number</th>
+                                    <td>{{ member.id_number|default:"-" }}</td>
+                                </tr>
+                                <tr>
+                                    <th>Is Verified</th>
+                                    <td>{{ member.is_verified|yesno:"Yes,No" }}</td>
+                                </tr>
+                                <tr>
+                                    <th>Is Refugee</th>
+                                    <td>{{ member.is_refugee|yesno:"Yes,No" }}</td>
+                                </tr>
+                            </table>
+                        </div>
+                        <div class="col-md-6">
+                            <h4>Production Details</h4>
+                            <table class="table table-bordered">
+                                <tr>
+                                    <th>Land Size (Acres)</th>
+                                    <td>{{ member.land_acres|default:"-" }}</td>
+                                </tr>
+                                <tr>
+                                    <th>Shea Trees</th>
+                                    <td>{{ member.shea_trees|default:"-" }}</td>
+                                </tr>
+                                <tr>
+                                    <th>Beehives</th>
+                                    <td>{{ member.beehives|default:"-" }}</td>
+                                </tr>
+                                <tr>
+                                    <th>Has Mobile Money</th>
+                                    <td>{{ member.has_mobile_money|yesno:"Yes,No" }}</td>
+                                </tr>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div class="row mt-4">
+                        <div class="col-12">
+                            <h4>Products Cultivated</h4>
+                            <table class="table table-bordered">
+                                <thead>
+                                    <tr>
+                                        <th>Product Name</th>
+                                        <th>Unit</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for product in member.products.all %}
+                                    <tr>
+                                        <td>{{ product.name }}</td>
+                                        <td>{{ product.unit }}</td>
+                                    </tr>
+                                    {% empty %}
+                                    <tr>
+                                        <td colspan="2" class="text-center">No products assigned</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
                             </table>
                         </div>
                     </div>

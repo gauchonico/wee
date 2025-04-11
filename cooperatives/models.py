@@ -146,6 +146,8 @@ class Cooperative(models.Model):
     registration_date = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     
+    
+    #counting number of members per cooperative
     @property
     def member_count(self):
         """Returns the actual count of members in this cooperative"""
@@ -215,7 +217,7 @@ class Member(models.Model):
     phone_number = models.CharField(max_length=20, db_index=True)
     gender = models.CharField(max_length=1, choices=GENDER_CHOICES)
     cooperative = models.ForeignKey(Cooperative, on_delete=models.CASCADE, related_name='cooperative_members', db_index=True)
-    farmer_group = models.ForeignKey(FarmerGroup, on_delete=models.CASCADE, related_name='group_members', db_index=True)
+    farmer_group = models.ForeignKey(FarmerGroup, on_delete=models.SET_NULL, null=True, blank=True, related_name='group_members', db_index=True)
     role = models.CharField(max_length=20, choices=ROLE_CHOICES, default='member', db_index=True)
     district = models.ForeignKey(District, on_delete=models.SET_NULL, null=True, blank=True, db_index=True)
     county = models.ForeignKey(County, on_delete=models.SET_NULL, null=True, blank=True, db_index=True)

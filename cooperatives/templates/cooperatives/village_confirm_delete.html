@@ -1,0 +1,44 @@
+{% extends 'base.html' %}
+
+{% block page_title %}Delete Village{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header">
+        <h5 class="card-title mb-0">Delete Village</h5>
+    </div>
+    <div class="card-body">
+        <p>Are you sure you want to delete the village "{{ object.name }}"?</p>
+        
+        <div class="row mt-4">
+            <div class="col-md-6">
+                <div class="card mb-3">
+                    <div class="card-header">
+                        <h6 class="card-title mb-0">Village Details</h6>
+                    </div>
+                    <div class="card-body">
+                        <p><strong>Name:</strong> {{ object.name }}</p>
+                        <p><strong>Code:</strong> {{ object.code }}</p>
+                        <p><strong>Parish:</strong> {{ object.parish.name }}</p>
+                        <p><strong>Sub County:</strong> {{ object.parish.subcounty.name }}</p>
+                        <p><strong>County:</strong> {{ object.parish.subcounty.county.name }}</p>
+                        <p><strong>District:</strong> {{ object.parish.subcounty.county.district.name }}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <form method="post">
+            {% csrf_token %}
+            <div class="d-flex justify-content-between">
+                <a href="{% url 'cooperatives:village-list' %}" class="btn btn-secondary">
+                    <i class="bi bi-arrow-left"></i> Cancel
+                </a>
+                <button type="submit" class="btn btn-danger">
+                    <i class="bi bi-trash"></i> Delete Village
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %} 

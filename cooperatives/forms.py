@@ -52,6 +52,12 @@ class VillageForm(forms.ModelForm):
             'parish': forms.Select(attrs={'class': 'form-control'}),
             'code': forms.TextInput(attrs={'class': 'form-control'}),
         }
+    
+    def clean_code(self):
+        code = self.cleaned_data.get('code')
+        if Village.objects.filter(code=code).exists():
+            raise forms.ValidationError("A village with this code already exists.")
+        return code
 
 class PaymentModeForm(forms.ModelForm):
     class Meta:
