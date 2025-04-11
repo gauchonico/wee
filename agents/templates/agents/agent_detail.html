@@ -1,0 +1,163 @@
+{% extends 'base.html' %}
+
+{% load static %}
+
+{% block page_title %}{{ agent.first_name }} {{ agent.last_name }}{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between mb-3">
+    <h5 class="mb-0">Agent Details</h5>
+    <div>
+        <a href="{% url 'agents:agent-update' agent.pk %}" class="btn btn-warning btn-sm">
+            <i class="bi bi-pencil"></i> Edit
+        </a>
+        <a href="{% url 'agents:agent-delete' agent.pk %}" class="btn btn-danger btn-sm">
+            <i class="bi bi-trash"></i> Delete
+        </a>
+        <a href="{% url 'agents:agent-list' %}" class="btn btn-secondary btn-sm">
+            <i class="bi bi-arrow-left"></i> Back to List
+        </a>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-6">
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="card-title mb-0">Personal Information</h5>
+            </div>
+            <div class="card-body">
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <p class="mb-1 text-muted">Agent ID</p>
+                        <h5>{{ agent.agent_id }}</h5>
+                    </div>
+                    <div class="col-md-6">
+                        <p class="mb-1 text-muted">Status</p>
+                        <h5>
+                            {% if agent.is_active %}
+                            <span class="badge bg-success">Active</span>
+                            {% else %}
+                            <span class="badge bg-danger">Inactive</span>
+                            {% endif %}
+                        </h5>
+                    </div>
+                </div>
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <p class="mb-1 text-muted">First Name</p>
+                        <h5>{{ agent.first_name }}</h5>
+                    </div>
+                    <div class="col-md-6">
+                        <p class="mb-1 text-muted">Last Name</p>
+                        <h5>{{ agent.last_name }}</h5>
+                    </div>
+                </div>
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <p class="mb-1 text-muted">Email</p>
+                        <h5>{{ agent.email }}</h5>
+                    </div>
+                    <div class="col-md-6">
+                        <p class="mb-1 text-muted">Phone Number</p>
+                        <h5>{{ agent.phone_number }}</h5>
+                    </div>
+                </div>
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <p class="mb-1 text-muted">Gender</p>
+                        <h5>{{ agent.get_gender_display }}</h5>
+                    </div>
+                    <div class="col-md-6">
+                        <p class="mb-1 text-muted">Date of Birth</p>
+                        <h5>{{ agent.date_of_birth|date:"Y-m-d" }}</h5>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-6">
+                        <p class="mb-1 text-muted">Date Joined</p>
+                        <h5>{{ agent.date_joined|date:"Y-m-d" }}</h5>
+                    </div>
+                    <div class="col-md-6">
+                        <p class="mb-1 text-muted">Farmers Profiled</p>
+                        <h5>{{ agent.farmers_profiled }}</h5>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="card-title mb-0">Assigned Districts</h5>
+            </div>
+            <div class="card-body">
+                {% if agent.districts.all %}
+                <div class="table-responsive">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>Code</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for district in agent.districts.all %}
+                            <tr>
+                                <td>{{ district.name }}</td>
+                                <td>{{ district.code }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="alert alert-info">
+                    <i class="bi bi-info-circle"></i> No districts assigned to this agent.
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <h5 class="card-title mb-0">Assigned Farmer Groups</h5>
+    </div>
+    <div class="card-body">
+        {% if agent.farmer_groups.all %}
+        <div class="table-responsive">
+            <table class="table table-striped">
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Code</th>
+                        <th>Cooperative</th>
+                        <th>District</th>
+                        <th>Sub County</th>
+                        <th>Village</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for group in agent.farmer_groups.all %}
+                    <tr>
+                        <td>{{ group.name }}</td>
+                        <td>{{ group.code }}</td>
+                        <td>{{ group.cooperative.fpo_name }}</td>
+                        <td>{{ group.district.name }}</td>
+                        <td>{{ group.sub_county.name }}</td>
+                        <td>{{ group.village.name }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="alert alert-info">
+            <i class="bi bi-info-circle"></i> No farmer groups assigned to this agent.
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %} 

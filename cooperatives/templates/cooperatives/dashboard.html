@@ -1,0 +1,126 @@
+{% extends 'base.html' %}
+
+{% load static %}
+
+{% block title %}Dashboard{% endblock %}
+
+{% block css %}
+	<link href="{% static 'plugins/jvectormap-next/jquery-jvectormap.css' %}" rel="stylesheet" />
+{% endblock %}
+
+{% block js %}
+	<script src="{% static 'plugins/jvectormap-next/jquery-jvectormap.min.js' %}"></script>
+	<script src="{% static 'plugins/jvectormap-content/world-mill.js' %}"></script>
+	<script src="{% static 'plugins/apexcharts/dist/apexcharts.min.js' %}"></script>
+    <script src="/assets/plugins/apexcharts/dist/apexcharts.min.js"/></script>
+	<script src="{% static 'js/demo/dashboard.demo.js' %}"></script>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <!-- Members by District Chart -->
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title">Members by District</h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="districtChart" height="300"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Members by Cooperative Chart -->
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title">Members by Cooperative</h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="cooperativeChart" height="300"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Member Products Pie Chart -->
+    <div class="row mt-4">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title">Member Products Distribution</h5>
+                </div>
+                <div class="card-body">
+                    <div id="memberProductsPieChart"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Debug information -->
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5>Debug Information</h5>
+                </div>
+                <div class="card-body">
+                    <h6>District Data:</h6>
+                    <pre>{{ district_labels|safe }}</pre>
+                    <pre>{{ district_data|safe }}</pre>
+                    
+                    <h6>Cooperative Data:</h6>
+                    <pre>{{ cooperative_labels|safe }}</pre>
+                    <pre>{{ cooperative_data|safe }}</pre>
+
+                    <h6>Product Data:</h6>
+                    <pre>{{ product_labels|safe }}</pre>
+                    <pre>{{ product_data|safe }}</pre>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize the member products pie chart
+    var productPieChartOptions = {
+        chart: {
+            height: 365,
+            type: 'pie',
+        },
+        dataLabels: {
+            enabled: true,
+            formatter: function(val) {
+                return val.toFixed(1) + "%"
+            }
+        },
+        stroke: { 
+            show: false 
+        },
+        colors: ['#2196F3', '#4CAF50', '#FFC107', '#9C27B0', '#F44336'],
+        labels: {{ product_labels|safe }},
+        series: {{ product_data|safe }},
+        title: {
+            text: 'Member Products Distribution',
+            align: 'center'
+        },
+        legend: {
+            position: 'bottom'
+        }
+    };
+
+    var productPieChart = new ApexCharts(
+        document.querySelector('#memberProductsPieChart'),
+        productPieChartOptions
+    );
+    productPieChart.render();
+});
+</script>
+{% endblock %}

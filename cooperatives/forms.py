@@ -277,4 +277,10 @@ class MemberBulkUploadForm(forms.Form):
         csv_file = self.cleaned_data['csv_file']
         if not csv_file.name.endswith('.csv'):
             raise forms.ValidationError('File must be a CSV document.')
-        return csv_file 
+        return csv_file
+
+class SunflowerAcreageBulkUploadForm(forms.Form):
+    csv_file = forms.FileField(
+        label='CSV File',
+        help_text='Upload a CSV file with member_id, sunflower_acreage (total available land), and sunflower_planted (actual planted acreage) columns. Both acreage fields should be decimal numbers.'
+    ) 

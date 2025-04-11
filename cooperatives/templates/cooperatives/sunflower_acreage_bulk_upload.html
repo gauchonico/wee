@@ -1,0 +1,32 @@
+{% extends 'base.html' %}
+
+{% load static %}
+
+{% block page_title %}Bulk Sunflower Acreage Upload{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header">
+        <h5 class="card-title mb-0">Bulk Sunflower Acreage Upload</h5>
+    </div>
+    <div class="card-body">
+        <form method="post" enctype="multipart/form-data">
+            {% csrf_token %}
+            <div class="mb-3">
+                <label for="csv_file" class="form-label">CSV File</label>
+                <input type="file" class="form-control" id="csv_file" name="csv_file" accept=".csv" required>
+                <div class="form-text">
+                    Upload a CSV file with the following columns:
+                    <ul>
+                        <li>member_id (required)</li>
+                        <li>sunflower_acreage (required, numeric)</li>
+                        <li>sunflower_planted (optional, true/false/yes/no/1/0)</li>
+                    </ul>
+                </div>
+            </div>
+            <button type="submit" class="btn btn-primary">Upload</button>
+            <a href="{% url 'cooperatives:member-list' %}" class="btn btn-secondary">Cancel</a>
+        </form>
+    </div>
+</div>
+{% endblock %} 

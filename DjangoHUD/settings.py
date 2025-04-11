@@ -10,10 +10,17 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/5.0/ref/settings/
 """
 
+import os
 from pathlib import Path
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
+# Security settings
+CSRF_TRUSTED_ORIGINS = [
+    "http://localhost:8000",
+    "http://127.0.0.1:8000",
+    "https://wee.mylivara.com/",  # Replace with your actual domain
+] 
 
 
 # Quick-start development settings - unsuitable for production
@@ -31,8 +38,9 @@ ALLOWED_HOSTS = ['*']
 # Application definition
 
 INSTALLED_APPS = [
-		'DjangoHUDApp.apps.DjangohudappConfig',
+    'DjangoHUDApp.apps.DjangohudappConfig',
     'cooperatives.apps.CooperativesConfig',
+    'agents.apps.AgentsConfig',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -124,8 +132,9 @@ USE_TZ = True
 STATIC_URL = '/static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 STATICFILES_DIRS = [
-    BASE_DIR / 'static',
-]
+       os.path.join(BASE_DIR, 'static'),
+       os.path.join(BASE_DIR, 'DjangoHUDApp/static'),
+   ]
 STATICSTORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
 # Default primary key field type

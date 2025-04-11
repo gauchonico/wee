@@ -2,7 +2,7 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.mixins import UserPassesTestMixin
 from django.contrib.auth.decorators import login_required
 from django.urls import reverse_lazy
-from django.views.generic import ListView, DetailView, CreateView, UpdateView, DeleteView, View
+from django.views.generic import ListView, DetailView, CreateView, UpdateView, DeleteView, View, TemplateView
 from django.contrib import messages
 from .models import (
     District, County, SubCounty, Parish, Village, PaymentMode,
@@ -12,15 +12,16 @@ from .forms import (
     DistrictForm, CountyForm, SubCountyForm, ParishForm, VillageForm, PaymentModeForm,
     CooperativeForm, FarmerGroupForm, MemberForm, ProductForm, PriceForm, UnitForm, CooperativeBulkUploadForm,
     ParishBulkUploadForm, VillageBulkUploadForm, SubCountyBulkUploadForm, CountyBulkUploadForm, DistrictBulkUploadForm,
-    FarmerGroupBulkUploadForm, MemberBulkUploadForm
+    FarmerGroupBulkUploadForm, MemberBulkUploadForm, SunflowerAcreageBulkUploadForm
 )
 from .mixins import CustomLoginRequiredMixin
 import csv
 import io
 from datetime import datetime
-from django.db.models import Q
+from django.db.models import Q, Count
 from django.views.generic.edit import FormView
 import random
+import json
 
 # District Views
 class DistrictListView(CustomLoginRequiredMixin, ListView):
@@ -1523,3 +1524,98 @@ class MemberProductAssignmentView(CustomLoginRequiredMixin, View):
 
         messages.success(request, f"Successfully assigned products to {assigned_count} out of {total_members} members without products.")
         return redirect(self.success_url)
+
+class SunflowerAcreageBulkUploadView(CustomLoginRequiredMixin, FormView):
+    template_name = 'cooperatives/sunflower_acreage_bulk_upload.html'
+    form_class = SunflowerAcreageBulkUploadForm
+    success_url = reverse_lazy('cooperatives:member-list')
+
+    def form_valid(self, form):
+        csv_file = form.cleaned_data['csv_file']
+        decoded_file = csv_file.read().decode('utf-8')
+        io_string = io.StringIO(decoded_file)
+        csv_data = csv.DictReader(io_string)
+        
+        success_count = 0
+        error_count = 0
+        error_messages = []
+
+        for row in csv_data:
+            try:
+                # Get the member
+                member = Member.objects.get(member_id=row['member_id'])
+                
+                # Update sunflower acreage and planted status
+                member.sunflower_acreage = float(row.get('sunflower_acreage', 0))
+                member.sunflower_planted = float(row.get('sunflower_planted', 0))
+                
+                # Validate that planted acreage doesn't exceed available acreage
+                if member.sunflower_planted > member.sunflower_acreage:
+                    error_messages.append(f"Row {csv_data.line_num}: Planted acreage ({member.sunflower_planted}) cannot exceed available acreage ({member.sunflower_acreage})")
+                    error_count += 1
+                    continue
+                
+                member.save()
+                success_count += 1
+            except Member.DoesNotExist:
+                error_messages.append(f"Row {csv_data.line_num}: Member with ID '{row['member_id']}' not found")
+                error_count += 1
+            except ValueError as e:
+                error_messages.append(f"Row {csv_data.line_num}: Invalid numeric value: {str(e)}")
+                error_count += 1
+            except Exception as e:
+                error_messages.append(f"Row {csv_data.line_num}: {str(e)}")
+                error_count += 1
+
+        # Add messages for user feedback
+        if success_count:
+            messages.success(self.request, f"Successfully updated {success_count} members' sunflower acreage.")
+        if error_count:
+            messages.error(self.request, f"Failed to update {error_count} members.")
+            for error in error_messages[:5]:  # Show first 5 errors
+                messages.warning(self.request, error)
+            if len(error_messages) > 5:
+                messages.warning(self.request, f"... and {len(error_messages) - 5} more errors")
+
+        return super().form_valid(form)
+
+class DashboardView(CustomLoginRequiredMixin, TemplateView):
+    template_name = 'cooperatives/dashboard.html'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        
+        # Get members by district
+        members_by_district = Member.objects.values('district__name').annotate(
+            count=Count('id')
+        ).order_by('-count')
+        
+        district_labels = [item['district__name'] for item in members_by_district]
+        district_data = [item['count'] for item in members_by_district]
+        
+        # Get members by cooperative
+        members_by_cooperative = Member.objects.values('cooperative__fpo_name').annotate(
+            count=Count('id')
+        ).order_by('-count')
+        
+        cooperative_labels = [item['cooperative__fpo_name'] for item in members_by_cooperative]
+        cooperative_data = [item['count'] for item in members_by_cooperative]
+
+        # Get product distribution through the many-to-many relationship
+        product_distribution = Member.objects.values('products__name').annotate(
+            count=Count('id')
+        ).order_by('-count')
+        
+        product_labels = [item['products__name'] or 'No Product' for item in product_distribution]
+        product_data = [item['count'] for item in product_distribution]
+        
+        context.update({
+            'district_labels': json.dumps(district_labels),
+            'district_data': json.dumps(district_data),
+            'cooperative_labels': json.dumps(cooperative_labels),
+            'cooperative_data': json.dumps(cooperative_data),
+            'product_labels': json.dumps(product_labels),
+            'product_data': json.dumps(product_data),
+        })
+        
+        return context

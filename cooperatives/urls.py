@@ -75,6 +75,7 @@ urlpatterns = [
     path('members/<int:pk>/update/', views.MemberUpdateView.as_view(), name='member-update'),
     path('members/<int:pk>/delete/', views.MemberDeleteView.as_view(), name='member-delete'),
     path('members/bulk-upload/', views.MemberBulkUploadView.as_view(), name='member-bulk-upload'),
+    path('members/sunflower-acreage/bulk-upload/', views.SunflowerAcreageBulkUploadView.as_view(), name='sunflower-acreage-bulk-upload'),
     path('members/assign-products/', views.MemberProductAssignmentView.as_view(), name='member-product-assignment'),
     
     # Product URLs
@@ -100,4 +101,5 @@ urlpatterns = [
     
     # API URLs
     path('api/farmer-groups/', api.get_farmer_groups, name='api-farmer-groups'),
+    path('dashboard/', views.DashboardView.as_view(), name='dashboard'),
 ] 

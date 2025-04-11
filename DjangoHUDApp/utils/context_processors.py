@@ -120,13 +120,13 @@ def sidebar_menu(request):
 	 {
 		'is_divider': 1
 	}, {
-		'text': 'Users',
+		'text': 'Agents',
 		'is_header': 1
 	}, {
-		'url': '/settings',
+		'url': '/agents/',
 		'icon': 'bi bi-gear',
-		'text': 'Settings',
-		'name': 'settings'
+		'text': 'All Agents',
+		'name': 'agent-list'
 	}]
 	
 	resolved_path = resolve(request.path_info)
