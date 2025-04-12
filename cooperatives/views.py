@@ -6,13 +6,13 @@ from django.views.generic import ListView, DetailView, CreateView, UpdateView, D
 from django.contrib import messages
 from .models import (
     District, County, SubCounty, Parish, Village, PaymentMode,
-    Cooperative, FarmerGroup, Member, Product, Price, Unit
+    Cooperative, FarmerGroup, Member, Product, Price, Unit, Supplier, SupplierProduct
 )
 from .forms import (
     DistrictForm, CountyForm, SubCountyForm, ParishForm, VillageForm, PaymentModeForm,
     CooperativeForm, FarmerGroupForm, MemberForm, ProductForm, PriceForm, UnitForm, CooperativeBulkUploadForm,
     ParishBulkUploadForm, VillageBulkUploadForm, SubCountyBulkUploadForm, CountyBulkUploadForm, DistrictBulkUploadForm,
-    FarmerGroupBulkUploadForm, MemberBulkUploadForm, SunflowerAcreageBulkUploadForm
+    FarmerGroupBulkUploadForm, MemberBulkUploadForm, SunflowerAcreageBulkUploadForm, SupplierForm, SupplierProductBulkUploadForm
 )
 from .mixins import CustomLoginRequiredMixin
 import csv
@@ -22,6 +22,9 @@ from django.db.models import Q, Count
 from django.views.generic.edit import FormView
 import random
 import json
+from django.contrib import messages  # For error_messages
+import io  # For StringIO
+import csv  # For csv.DictReader
 
 # District Views
 class DistrictListView(CustomLoginRequiredMixin, ListView):
@@ -1619,3 +1622,187 @@ class DashboardView(CustomLoginRequiredMixin, TemplateView):
         })
         
         return context
+
+# Supplier Views
+class SupplierListView(CustomLoginRequiredMixin, ListView):
+    model = Supplier
+    template_name = 'cooperatives/supplier_list.html'
+    context_object_name = 'suppliers'
+    ordering = ['name']
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['title'] = 'Suppliers'
+        return context
+
+class SupplierCreateView(CustomLoginRequiredMixin, CreateView):
+    model = Supplier
+    form_class = SupplierForm
+    template_name = 'cooperatives/supplier_form.html'
+    success_url = reverse_lazy('cooperatives:supplier_list')
+
+    def form_valid(self, form):
+        form.instance.created_by = self.request.user
+        return super().form_valid(form)
+
+class SupplierUpdateView(CustomLoginRequiredMixin, UpdateView):
+    model = Supplier
+    form_class = SupplierForm
+    template_name = 'cooperatives/supplier_form.html'
+    success_url = reverse_lazy('supplier_list')
+
+class SupplierDeleteView(CustomLoginRequiredMixin, DeleteView):
+    model = Supplier
+    template_name = 'cooperatives/supplier_confirm_delete.html'
+    success_url = reverse_lazy('supplier_list')
+
+# Supplier Product Views
+class SupplierProductListView(ListView):
+    model = SupplierProduct
+    template_name = 'cooperatives/supplier_product_list.html'
+    context_object_name = 'supplier_products'
+    paginate_by = 50  # Increased from 10 to 50 items per page
+
+    def get_queryset(self):
+        queryset = super().get_queryset()
+        supplier_id = self.request.GET.get('supplier')
+        if supplier_id:
+            queryset = queryset.filter(supplier_id=supplier_id)
+        return queryset.select_related('supplier', 'unit').order_by('supplier__name', 'name')
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['total_products'] = self.get_queryset().count()
+        return context
+
+class SupplierProductCreateView(CreateView):
+    model = SupplierProduct
+    template_name = 'cooperatives/supplier_product_form.html'
+    fields = ['name', 'supplier','category', 'unit', 'price_per_unit']
+    success_url = reverse_lazy('cooperatives:supplier_product_list')
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['title'] = 'Add New Supplier Product'
+        return context
+
+class SupplierProductUpdateView(UpdateView):
+    model = SupplierProduct
+    template_name = 'cooperatives/supplier_product_form.html'
+    fields = ['name', 'supplier', 'unit', 'price_per_unit']
+    success_url = reverse_lazy('cooperatives:supplier_product_list')
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['title'] = 'Edit Supplier Product'
+        return context
+
+class SupplierProductDeleteView(DeleteView):
+    model = SupplierProduct
+    template_name = 'cooperatives/supplier_product_confirm_delete.html'
+    success_url = reverse_lazy('cooperatives:supplier_product_list')
+
+class SupplierProductBulkUploadView(CustomLoginRequiredMixin, View):
+    template_name = 'cooperatives/supplier_product_bulk_upload.html'
+    form_class = SupplierProductBulkUploadForm
+
+    def get(self, request):
+        form = self.form_class()
+        return render(request, self.template_name, {'form': form})
+
+    def post(self, request):
+        form = self.form_class(request.POST, request.FILES)
+        if form.is_valid():
+            csv_file = request.FILES['csv_file']
+            try:
+                decoded_file = csv_file.read().decode('utf-8').splitlines()
+                reader = csv.DictReader(decoded_file)
+                
+                # Check if all required columns are present
+                required_columns = ['supplier_name', 'name', 'category', 'unit', 'price_per_unit']
+                missing_columns = [col for col in required_columns if col not in reader.fieldnames]
+                if missing_columns:
+                    messages.error(request, f"Missing required columns in CSV: {', '.join(missing_columns)}")
+                    return render(request, self.template_name, {'form': form})
+                
+                success_count = 0
+                error_messages = []
+                
+                for row in reader:
+                    try:
+                        # Get and validate supplier name
+                        supplier_name = row.get('supplier_name', '').strip()
+                        if not supplier_name:
+                            error_messages.append(f"Row {reader.line_num}: Supplier name is required")
+                            continue
+                        
+                        supplier = Supplier.objects.filter(name__iexact=supplier_name).first()
+                        if not supplier:
+                            error_messages.append(f"Row {reader.line_num}: Supplier '{supplier_name}' not found")
+                            continue
+                        
+                        # Get and validate product name
+                        product_name = row.get('name', '').strip()
+                        if not product_name:
+                            error_messages.append(f"Row {reader.line_num}: Product name is required")
+                            continue
+                        
+                        # Get and validate category
+                        category = row.get('category', '').strip()
+                        if not category:
+                            error_messages.append(f"Row {reader.line_num}: Category is required")
+                            continue
+                        
+                        # Get and validate unit
+                        unit_name = row.get('unit', '').strip()
+                        if not unit_name:
+                            error_messages.append(f"Row {reader.line_num}: Unit is required")
+                            continue
+                        
+                        # Get or create the unit
+                        unit, created = Unit.objects.get_or_create(
+                            name=unit_name,
+                            defaults={'code': unit_name[:3].upper()}
+                        )
+                        
+                        # Get and validate price per unit
+                        price_per_unit = row.get('price_per_unit')
+                        if not price_per_unit:
+                            error_messages.append(f"Row {reader.line_num}: Price per unit is required")
+                            continue
+                        
+                        try:
+                            price_per_unit = float(price_per_unit)
+                            if price_per_unit <= 0:
+                                error_messages.append(f"Row {reader.line_num}: Price per unit must be a positive number")
+                                continue
+                        except ValueError:
+                            error_messages.append(f"Row {reader.line_num}: Price per unit must be a number")
+                            continue
+                        
+                        # Create the supplier product
+                        SupplierProduct.objects.create(
+                            supplier=supplier,
+                            name=product_name,
+                            category=category,
+                            unit=unit,
+                            price_per_unit=price_per_unit
+                        )
+                        success_count += 1
+                        
+                    except Exception as e:
+                        error_messages.append(f"Row {reader.line_num}: {str(e)}")
+                
+                if success_count > 0:
+                    messages.success(request, f"Successfully imported {success_count} supplier products")
+                if error_messages:
+                    messages.warning(request, f"Some errors occurred during import: {', '.join(error_messages)}")
+                
+                return redirect('cooperatives:supplier_product_list')
+            except Exception as e:
+                messages.error(request, f"Error reading CSV file: {str(e)}")
+                return render(request, self.template_name, {'form': form})
+        else:
+            form = self.form_class()
+        
+        return render(request, self.template_name, {'form': form})

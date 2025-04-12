@@ -1,7 +1,7 @@
 from django import forms
 from .models import (
     District, County, SubCounty, Parish, Village, PaymentMode,
-    Cooperative, FarmerGroup, Member, Product, Price, Unit
+    Cooperative, FarmerGroup, Member, Product, Price, Unit, Supplier, SupplierProduct
 )
 
 class DistrictForm(forms.ModelForm):
@@ -283,4 +283,42 @@ class SunflowerAcreageBulkUploadForm(forms.Form):
     csv_file = forms.FileField(
         label='CSV File',
         help_text='Upload a CSV file with member_id, sunflower_acreage (total available land), and sunflower_planted (actual planted acreage) columns. Both acreage fields should be decimal numbers.'
+    )
+
+class SupplierForm(forms.ModelForm):
+    class Meta:
+        model = Supplier
+        fields = ['name', 'contact_person', 'phone_number', 'email', 'address', 'products', 'is_active']
+        widgets = {
+            'name': forms.TextInput(attrs={'class': 'form-control'}),
+            'contact_person': forms.TextInput(attrs={'class': 'form-control'}),
+            'phone_number': forms.TextInput(attrs={'class': 'form-control'}),
+            'email': forms.EmailInput(attrs={'class': 'form-control'}),
+            'address': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
+            'products': forms.SelectMultiple(attrs={'class': 'form-control'}),
+            'is_active': forms.CheckboxInput(attrs={'class': 'form-check-input'})
+        }
+        
+    def clean_phone_number(self):
+        phone_number = self.cleaned_data.get('phone_number')
+        if not phone_number.isdigit():
+            raise forms.ValidationError("Phone number must contain only digits.")
+        return phone_number
+
+class SupplierProductForm(forms.ModelForm):
+    class Meta:
+        model = SupplierProduct
+        fields = ['name', 'supplier','category', 'unit', 'price_per_unit']
+        widgets = {
+            'name': forms.TextInput(attrs={'class': 'form-control'}),
+            'supplier': forms.Select(attrs={'class': 'form-control'}),
+            'category':forms.Select(attrs={'class':'corm-control'}),
+            'unit': forms.Select(attrs={'class': 'form-control'}),
+            'price_per_unit': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
+        }
+
+class SupplierProductBulkUploadForm(forms.Form):
+    csv_file = forms.FileField(
+        label='CSV File',
+        help_text='Upload a CSV file with columns: supplier_name, name, category, unit, price_per_unit. Example: "ABC Suppliers","Maize Seeds","Seeds","Kg",5000'
     ) 

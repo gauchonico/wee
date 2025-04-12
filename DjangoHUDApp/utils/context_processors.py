@@ -86,7 +86,19 @@ def sidebar_menu(request):
 			'text': 'Units Config',
 			'name': 'cooperatives:unit-list'
 		}]
-	},
+	},{
+		'icon':'bi bi-columns',
+		'text':'Suppliers',
+		'children':[{
+			'url':'/cooperatives/suppliers/',
+			'text':'All Suppliers',
+			'name':'supplier_list'
+		},{
+			'url':'/cooperatives/supplier-products/',
+			'text':'Supplier Product List',
+			'name':'supplier_product_list'
+      	}]
+     },
 	{
 		'text': 'Geographical Location Center',
 		'is_header': 1

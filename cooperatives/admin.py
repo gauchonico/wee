@@ -1,7 +1,7 @@
 from django.contrib import admin
 from .models import (
     District, County, Price, SubCounty, Parish, Village, PaymentMode,
-    Cooperative, FarmerGroup, Member, Product, Unit
+    Cooperative, FarmerGroup, Member, Product, Unit, Supplier, SupplierProduct
 )
 
 @admin.register(District)
@@ -87,3 +87,16 @@ class UnitAdmin(admin.ModelAdmin):
     list_filter = ('created_at',)
     search_fields = ('name', 'symbol', 'description')
     date_hierarchy = 'created_at'
+    
+@admin.register(Supplier)
+class SupplierAdmin(admin.ModelAdmin):
+    list_display = ('name', 'contact_person', 'phone_number', 'email', 'is_active')
+    list_filter = ('is_active',)
+    search_fields = ('name', 'contact_person', 'phone_number', 'email')
+
+@admin.register(SupplierProduct)
+class SupplierProductAdmin(admin.ModelAdmin):
+    list_display = ('name', 'supplier', 'unit', 'price_per_unit')
+    list_filter = ('supplier', 'unit')
+    search_fields = ('name', 'supplier__name')
+    list_per_page = 20

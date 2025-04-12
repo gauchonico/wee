@@ -278,4 +278,37 @@ class Member(models.Model):
             self.gps_coordinates = f"{self.latitude},{self.longitude}"
         super().save(*args, **kwargs)
 
+class Supplier(models.Model):
+    name = models.CharField(max_length=100)
+    contact_person = models.CharField(max_length=100, null=True, blank=True)
+    phone_number = models.CharField(max_length=20, help_text="put 0 if no contact is provided")
+    email = models.EmailField(null=True, blank=True)
+    address = models.TextField(null=True, blank=True)
+    products = models.ManyToManyField(Product, blank=True, related_name='supplier_products', help_text="Products supplied by this supplier")
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return self.name
+
+class SupplierProduct(models.Model):
+    CATEGORIES  = (
+        ('agro_inputs', 'Agro Inputs'),
+        ('phones', 'Phones'),
+        
+        ('others','Others')
+        
+    )
+    name = models.CharField(max_length=100)
+    supplier = models.ForeignKey(Supplier, on_delete=models.CASCADE, related_name='supplier_products_list')
+    unit = models.ForeignKey(Unit, on_delete=models.SET_NULL, blank=True, null=True)
+    price_per_unit = models.DecimalField(max_digits=10, decimal_places=2)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    category = models.CharField(max_length=20, choices=CATEGORIES, null=True, blank=True)
+
+    def __str__(self):
+        return f"{self.name} - {self.supplier.name}"
+
 

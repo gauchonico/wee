@@ -102,4 +102,17 @@ urlpatterns = [
     # API URLs
     path('api/farmer-groups/', api.get_farmer_groups, name='api-farmer-groups'),
     path('dashboard/', views.DashboardView.as_view(), name='dashboard'),
+    
+    # Supplier URLs
+    path('suppliers/', views.SupplierListView.as_view(), name='supplier_list'),
+    path('suppliers/create/', views.SupplierCreateView.as_view(), name='supplier_create'),
+    path('suppliers/<int:pk>/update/', views.SupplierUpdateView.as_view(), name='supplier_update'),
+    path('suppliers/<int:pk>/delete/', views.SupplierDeleteView.as_view(), name='supplier_delete'),
+
+    # Supplier Product URLs
+    path('supplier-products/', views.SupplierProductListView.as_view(), name='supplier_product_list'),
+    path('supplier-products/create/', views.SupplierProductCreateView.as_view(), name='supplier_product_create'),
+    path('supplier-products/<int:pk>/update/', views.SupplierProductUpdateView.as_view(), name='supplier_product_update'),
+    path('supplier-products/<int:pk>/delete/', views.SupplierProductDeleteView.as_view(), name='supplier_product_delete'),
+    path('supplier-products/bulk-upload/', views.SupplierProductBulkUploadView.as_view(), name='supplier_product_bulk_upload'),
 ] 

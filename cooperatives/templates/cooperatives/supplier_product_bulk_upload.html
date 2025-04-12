@@ -1,0 +1,54 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load widget_tweaks %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">Bulk Upload Supplier Products</h3>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-info">
+                        <h5><i class="icon fas fa-info"></i> Instructions</h5>
+                        <p>Upload a CSV file with the following columns:</p>
+                        <ul>
+                            <li><strong>supplier_name</strong>: The name of the supplier</li>
+                            <li><strong>name</strong>: The name of the product</li>
+                            <li><strong>unit</strong>: The unit of measurement (e.g., kg, piece)</li>
+                            <li><strong>price_per_unit</strong>: The price per unit</li>
+                        </ul>
+                        <p>Example CSV format:</p>
+                        <pre>
+supplier_name,name,unit,price_per_unit
+"ABC Suppliers",Maize Seeds,kg,5000
+"ABC Suppliers",Fertilizer,kg,3000
+"XYZ Traders",Seeds,piece,2000
+                        </pre>
+                    </div>
+
+                    <form method="post" enctype="multipart/form-data">
+                        {% csrf_token %}
+                        <div class="form-group">
+                            <label for="{{ form.csv_file.id_for_label }}">CSV File</label>
+                            {% render_field form.csv_file class="form-control-file" %}
+                            {% if form.csv_file.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {{ form.csv_file.errors }}
+                                </div>
+                            {% endif %}
+                            <small class="form-text text-muted">{{ form.csv_file.help_text }}</small>
+                        </div>
+                        <div class="mt-3">
+                            <button type="submit" class="btn btn-primary">Upload</button>
+                            <a href="{% url 'cooperatives:supplier_product_list' %}" class="btn btn-secondary">Cancel</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

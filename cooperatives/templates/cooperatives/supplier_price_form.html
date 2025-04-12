@@ -1,0 +1,115 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">
+                        {% if form.instance.pk %}
+                            Edit Supplier Price
+                        {% else %}
+                            Add New Supplier Price
+                        {% endif %}
+                    </h3>
+                </div>
+                <div class="card-body">
+                    <form method="post">
+                        {% csrf_token %}
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="{{ form.supplier.id_for_label }}">Supplier</label>
+                                    {{ form.supplier }}
+                                    {% if form.supplier.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {{ form.supplier.errors }}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="{{ form.product.id_for_label }}">Product</label>
+                                    {{ form.product }}
+                                    {% if form.product.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {{ form.product.errors }}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="{{ form.price.id_for_label }}">Price</label>
+                                    {{ form.price }}
+                                    {% if form.price.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {{ form.price.errors }}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="{{ form.unit.id_for_label }}">Unit</label>
+                                    {{ form.unit }}
+                                    {% if form.unit.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {{ form.unit.errors }}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="{{ form.effective_date.id_for_label }}">Effective Date</label>
+                                    {{ form.effective_date }}
+                                    {% if form.effective_date.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {{ form.effective_date.errors }}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="{{ form.end_date.id_for_label }}">End Date (Optional)</label>
+                                    {{ form.end_date }}
+                                    {% if form.end_date.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {{ form.end_date.errors }}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-12">
+                                <div class="form-group">
+                                    <div class="custom-control custom-switch">
+                                        {{ form.is_current }}
+                                        <label class="custom-control-label" for="{{ form.is_current.id_for_label }}">Set as Current Price</label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-12">
+                                <button type="submit" class="btn btn-primary">Save</button>
+                                <a href="{% url 'supplier_price_list' %}" class="btn btn-secondary">Cancel</a>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 
