@@ -15,12 +15,7 @@ from pathlib import Path
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
-# Security settings
-CSRF_TRUSTED_ORIGINS = [
-    "http://localhost:8000",
-    "http://127.0.0.1:8000",
-    "https://wee.mylivara.com/",  # Replace with your actual domain
-] 
+
 
 
 # Quick-start development settings - unsuitable for production
@@ -32,7 +27,9 @@ SECRET_KEY = 'django-insecure-6#97(6ryq6m!i3(&h&@ah(0o*$9*$&386^^b%b#zow1+y=0i1z
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['*']
+ALLOWED_HOSTS = ['wee.mylivara.com','127.0.0.1',]
+# Security settings
+CSRF_TRUSTED_ORIGINS = ['https://wee.mylivara.com'] 
 
 
 # Application definition
