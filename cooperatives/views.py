@@ -25,6 +25,7 @@ import json
 from django.contrib import messages  # For error_messages
 import io  # For StringIO
 import csv  # For csv.DictReader
+import time
 
 # District Views
 class DistrictListView(CustomLoginRequiredMixin, ListView):
@@ -1007,8 +1008,13 @@ class FarmerGroupBulkUploadView(CustomLoginRequiredMixin, View):
         counter = 1
         new_code = base_code
         while FarmerGroup.objects.filter(code=new_code).exists():
-            new_code = f"{base_code}{counter}"
+            # Use a more unique timestamp with milliseconds and a random suffix
+            timestamp = int(time.time() * 1000)
+            random_suffix = ''.join(random.choices('ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789', k=4))
+            new_code = f"{base_code}-{timestamp}-{random_suffix}"
             counter += 1
+            if counter > 3:  # Only try 3 times
+                raise ValueError("Could not generate a unique code after multiple attempts")
         return new_code
 
     def post(self, request):
@@ -1025,6 +1031,14 @@ class FarmerGroupBulkUploadView(CustomLoginRequiredMixin, View):
             errors = []
             skipped_groups = []
 
+            # Get the generic cooperative
+            try:
+                generic_cooperative = Cooperative.objects.get(fpo_name='GENERIC COOPERATIVE')
+            except Cooperative.DoesNotExist:
+                errors.append("Generic cooperative not found. Please create a generic cooperative first.")
+                messages.error(request, "Generic cooperative not found. Please create a generic cooperative first.")
+                return redirect(self.success_url)
+
             for row in reader:
                 try:
                     # Validate required fields
@@ -1032,93 +1046,88 @@ class FarmerGroupBulkUploadView(CustomLoginRequiredMixin, View):
                         errors.append(f"Missing name for farmer group")
                         error_count += 1
                         continue
-                    
-                    if not row.get('cooperative'):
-                        errors.append(f"Missing cooperative for farmer group '{row['name']}'")
-                        error_count += 1
-                        continue
 
                     # Check if farmer group with this name already exists
-                    if FarmerGroup.objects.filter(name=row['name']).exists():
+                    existing_group = FarmerGroup.objects.filter(name=row['name']).first()
+                    if existing_group:
+                        # If it exists, use its code
+                        code = existing_group.code
                         skipped_groups.append(row['name'])
                         skipped_count += 1
                         continue
 
-                    # Get the cooperative
-                    try:
-                        cooperative = Cooperative.objects.get(fpo_name=row['cooperative'].strip())
-                    except Cooperative.DoesNotExist:
-                        errors.append(f"Cooperative '{row['cooperative']}' does not exist for farmer group '{row['name']}'")
-                        error_count += 1
-                        continue
+                    # Get the cooperative or use generic cooperative
+                    cooperative_name = row.get('cooperative', '').strip()
+                    if cooperative_name:
+                        try:
+                            cooperative = Cooperative.objects.get(fpo_name=cooperative_name)
+                        except Cooperative.DoesNotExist:
+                            errors.append(f"Cooperative '{cooperative_name}' does not exist for farmer group '{row['name']}'. Using generic cooperative instead.")
+                            cooperative = generic_cooperative
+                    else:
+                        cooperative = generic_cooperative
                     
                     # Get the district
                     try:
-                        district = District.objects.get(name=row['district'].strip())
+                        district_name = row.get('district')
+                        if not district_name:
+                            errors.append(f"Missing district for farmer group '{row['name']}'")
+                            error_count += 1
+                            continue
+                        district = District.objects.get(name=district_name.strip())
                     except District.DoesNotExist:
-                        errors.append(f"District '{row['district']}' does not exist for farmer group '{row['name']}'")
+                        errors.append(f"District '{district_name}' does not exist for farmer group '{row['name']}'. Please ensure the district exists in the system.")
                         error_count += 1
                         continue
                     
                     # Get the sub-county
                     try:
-                        sub_county = SubCounty.objects.get(name=row['sub_county'].strip())
-                    except SubCounty.DoesNotExist:
-                        errors.append(f"Sub-county '{row['sub_county']}' does not exist for farmer group '{row['name']}'")
+                        sub_county_name = row.get('subcounty') or row.get('sub_county')
+                        if not sub_county_name:
+                            errors.append(f"Missing sub-county for farmer group '{row['name']}'")
+                            error_count += 1
+                            continue
+                        # Clean up the sub-county name
+                        sub_county_name = sub_county_name.strip()
+                        # Try to find the sub-county with case-insensitive search
+                        sub_county = SubCounty.objects.filter(name__iexact=sub_county_name).first()
+                        if not sub_county:
+                            # Try to find by code if name doesn't match
+                            sub_county = SubCounty.objects.filter(code__iexact=sub_county_name).first()
+                            if not sub_county:
+                                errors.append(f"Sub-county '{sub_county_name}' does not exist for farmer group '{row['name']}'. Please check the spelling and case.")
+                                error_count += 1
+                                continue
+                    except Exception as e:
+                        errors.append(f"Error looking up sub-county '{sub_county_name}' for farmer group '{row['name']}': {str(e)}")
                         error_count += 1
                         continue
                     
                     # Get the parish if provided
                     parish = None
-                    parish_name = row.get('parish', '').strip()
-                    
-                    if parish_name:  # Only process parish if it's not blank
+                    if row.get('parish'):
                         try:
-                            # Try different possible column names for parish
-                            if not parish_name:
-                                for possible_name in ['parish', 'parish_name', 'parishname']:
-                                    if row.get(possible_name):
-                                        parish_name = row[possible_name].strip()
-                                        break
-                            
-                            if parish_name:  # Only try to find parish if we have a name
-                                try:
-                                    parish = Parish.objects.get(name=parish_name, subcounty=sub_county)
-                                except Parish.DoesNotExist:
-                                    # If not found in specified sub-county, try to find it in any sub-county
-                                    parish = Parish.objects.filter(name=parish_name).first()
-                                    if parish:
-                                        # Update the sub-county to match the parish's actual sub-county
-                                        sub_county = parish.subcounty
-                                        messages.info(self.request, f"Row {csv_data.line_num}: Parish '{parish_name}' found in sub-county '{sub_county.name}'. Sub-county updated to match.")
-                                    else:
-                                        messages.warning(self.request, f"Row {csv_data.line_num}: Parish '{parish_name}' not found in any sub-county. Skipping parish assignment.")
-                        except Exception as e:
-                            messages.warning(self.request, f"Row {csv_data.line_num}: Error processing parish: {str(e)}. Skipping parish assignment.")
+                            parish = Parish.objects.get(name=row['parish'].strip(), subcounty=sub_county)
+                        except Parish.DoesNotExist:
+                            errors.append(f"Parish '{row['parish']}' does not exist in sub-county '{sub_county.name}' for farmer group '{row['name']}'")
+                            error_count += 1
+                            continue
                     
                     # Get the village if provided
                     village = None
                     if row.get('village'):
                         try:
-                            # Get the first village that matches the name and belongs to the correct parish
-                            village = Village.objects.filter(
-                                name=row['village'].strip(),
-                                parish=parish
-                            ).first() if parish else None
-                            
-                            if not village:
-                                errors.append(f"Village '{row['village']}' does not exist in parish '{parish.name if parish else 'unknown'}' for farmer group '{row['name']}'")
-                                error_count += 1
-                                continue
-                        except Exception as e:
-                            errors.append(f"Error finding village '{row['village']}' for farmer group '{row['name']}': {str(e)}")
+                            village = Village.objects.get(name=row['village'].strip(), parish=parish)
+                        except Village.DoesNotExist:
+                            errors.append(f"Village '{row['village']}' does not exist in parish '{parish.name if parish else 'unknown'}' for farmer group '{row['name']}'")
                             error_count += 1
                             continue
-                    
+
                     # Handle farmer group - now optional
                     farmer_group = None
                     if row.get('farmer_group_name'):
                         try:
+                            # First check if a farmer group with this name exists in the cooperative
                             farmer_group = FarmerGroup.objects.get(
                                 name=row['farmer_group_name'],
                                 cooperative=cooperative
@@ -1127,8 +1136,20 @@ class FarmerGroupBulkUploadView(CustomLoginRequiredMixin, View):
                             # Create new farmer group if it doesn't exist
                             try:
                                 # Generate a unique code for the farmer group
-                                base_code = f"{cooperative.fpo_name[:3].upper()}-{row['farmer_group_name'][:3].upper()}"
-                                unique_code = self.generate_unique_code(base_code)
+                                clean_name = ''.join(c for c in row['farmer_group_name'] if c.isalnum() or c.isspace())
+                                clean_name = clean_name.replace(' ', '')[:8].upper()
+                                base_code = f"{cooperative.fpo_name[:3].upper()}-{clean_name}"
+                                
+                                # Try to generate a unique code
+                                try:
+                                    unique_code = self.generate_unique_code(base_code)
+                                except ValueError:
+                                    # If code generation fails, try one more time with a different approach
+                                    timestamp = int(time.time() * 1000)
+                                    random_suffix = ''.join(random.choices('ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789', k=6))
+                                    unique_code = f"{cooperative.fpo_name[:3].upper()}-{timestamp}-{random_suffix}"
+                                    if FarmerGroup.objects.filter(code=unique_code).exists():
+                                        raise ValueError("Could not generate unique code")
                                 
                                 farmer_group = FarmerGroup.objects.create(
                                     name=row['farmer_group_name'],
@@ -1218,9 +1239,14 @@ class MemberBulkUploadView(CustomLoginRequiredMixin, FormView):
         """Generate a unique code by appending a number if the code already exists."""
         counter = 1
         new_code = base_code
-        while Village.objects.filter(code=new_code).exists():
-            new_code = f"{base_code}{counter}"
+        while FarmerGroup.objects.filter(code=new_code).exists():
+            # Use a more unique timestamp with milliseconds and a random suffix
+            timestamp = int(time.time() * 1000)
+            random_suffix = ''.join(random.choices('ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789', k=4))
+            new_code = f"{base_code}-{timestamp}-{random_suffix}"
             counter += 1
+            if counter > 3:  # Only try 3 times
+                raise ValueError("Could not generate a unique code after multiple attempts")
         return new_code
 
     def form_valid(self, form):
@@ -1379,6 +1405,7 @@ class MemberBulkUploadView(CustomLoginRequiredMixin, FormView):
                 farmer_group = None
                 if row.get('farmer_group_name'):
                     try:
+                        # First check if a farmer group with this name exists in the cooperative
                         farmer_group = FarmerGroup.objects.get(
                             name=row['farmer_group_name'],
                             cooperative=cooperative
@@ -1387,8 +1414,20 @@ class MemberBulkUploadView(CustomLoginRequiredMixin, FormView):
                         # Create new farmer group if it doesn't exist
                         try:
                             # Generate a unique code for the farmer group
-                            base_code = f"{cooperative.fpo_name[:3].upper()}-{row['farmer_group_name'][:3].upper()}"
-                            unique_code = self.generate_unique_code(base_code)
+                            clean_name = ''.join(c for c in row['farmer_group_name'] if c.isalnum() or c.isspace())
+                            clean_name = clean_name.replace(' ', '')[:8].upper()
+                            base_code = f"{cooperative.fpo_name[:3].upper()}-{clean_name}"
+                            
+                            # Try to generate a unique code
+                            try:
+                                unique_code = self.generate_unique_code(base_code)
+                            except ValueError:
+                                # If code generation fails, try one more time with a different approach
+                                timestamp = int(time.time() * 1000)
+                                random_suffix = ''.join(random.choices('ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789', k=6))
+                                unique_code = f"{cooperative.fpo_name[:3].upper()}-{timestamp}-{random_suffix}"
+                                if FarmerGroup.objects.filter(code=unique_code).exists():
+                                    raise ValueError("Could not generate unique code")
                             
                             farmer_group = FarmerGroup.objects.create(
                                 name=row['farmer_group_name'],

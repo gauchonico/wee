@@ -1,6 +1,7 @@
 {% extends 'base.html' %}
 
 {% load static %}
+
 {% block page_title %}Farmer Groups{% endblock %}
 
 {% block css %}
@@ -11,42 +12,39 @@
 {% endblock %}
 
 {% block js %}
-	<script src="{% static 'plugins/datatables.net/js/dataTables.min.js' %}"></script>
-	<script src="{% static 'plugins/datatables.net-bs5/js/dataTables.bootstrap5.min.js' %}"></script>
-	<script src="{% static 'plugins/datatables.net-buttons/js/dataTables.buttons.min.js' %}"></script>
-	<script src="{% static 'plugins/jszip/dist/jszip.min.js' %}"></script>
-	<script src="{% static 'plugins/pdfmake/build/pdfmake.min.js' %}"></script>
-	<script src="{% static 'plugins/pdfmake/build/vfs_fonts.js' %}"></script>
-	<script src="{% static 'plugins/datatables.net-buttons/js/buttons.colVis.min.js' %}"></script>
-	<script src="{% static 'plugins/datatables.net-buttons/js/buttons.flash.min.js' %}"></script>
-	<script src="{% static 'plugins/datatables.net-buttons/js/buttons.html5.min.js' %}"></script>
-	<script src="{% static 'plugins/datatables.net-buttons/js/buttons.print.min.js' %}"></script>
-	<script src="{% static 'plugins/datatables.net-buttons-bs5/js/buttons.bootstrap5.min.js' %}"></script>
-	<script src="{% static 'plugins/datatables.net-responsive/js/dataTables.responsive.min.js' %}"></script>
-	<script src="{% static 'plugins/datatables.net-responsive-bs5/js/responsive.bootstrap5.min.js' %}"></script>
-	<script src="{% static 'plugins/datatables.net-fixedcolumns/js/dataTables.fixedColumns.min.js' %}"></script>
-	<script src="{% static 'plugins/datatables.net-fixedcolumns-bs5/js/fixedColumns.bootstrap5.min.js' %}"></script>
-	<script src="{% static 'js/demo/page-data-management.demo.js' %}"></script>
+    <script src="{% static 'plugins/@highlightjs/cdn-assets/highlight.min.js' %}"></script>
+    <script src="{% static 'js/demo/highlightjs.demo.js' %}"></script>
+    <script src="{% static 'plugins/datatables.net/js/dataTables.min.js' %}"></script>
+    <script src="{% static 'plugins/datatables.net-bs5/js/dataTables.bootstrap5.min.js' %}"></script>
+    <script src="{% static 'plugins/datatables.net-buttons/js/dataTables.buttons.min.js' %}"></script>
+    <script src="{% static 'plugins/datatables.net-buttons/js/buttons.colVis.min.js' %}"></script>
+    <script src="{% static 'plugins/datatables.net-buttons/js/buttons.flash.min.js' %}"></script>
+    <script src="{% static 'plugins/datatables.net-buttons/js/buttons.html5.min.js' %}"></script>
+    <script src="{% static 'plugins/datatables.net-buttons/js/buttons.print.min.js' %}"></script>
+    <script src="{% static 'plugins/datatables.net-buttons-bs5/js/buttons.bootstrap5.min.js' %}"></script>
+    <script src="{% static 'plugins/datatables.net-responsive/js/dataTables.responsive.min.js' %}"></script>
+    <script src="{% static 'plugins/datatables.net-responsive-bs5/js/responsive.bootstrap5.min.js' %}"></script>
+    <script src="{% static 'plugins/bootstrap-table/dist/bootstrap-table.min.js' %}"></script>
+    <script src="{% static 'js/demo/table-plugins.demo.js' %}"></script>
+    <script src="{% static 'js/demo/sidebar-scrollspy.demo.js' %}"></script>
 {% endblock %}
 
 {% block content %}
 <div class="container mt-4">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h1>Farmer Groups</h1>
-        <div>
+    <div class="card">
+        <div class="card-header">
+            <h4 class="mb-3">Farmer Groups</h4>
+            <div class="card-tools">
             <a href="{% url 'cooperatives:farmer-group-bulk-upload' %}" class="btn btn-success me-2">
                 <i class="fas fa-file-import"></i> Bulk Upload
             </a>
             <a href="{% url 'cooperatives:farmer-group-create' %}" class="btn bg-teal-800 text-white">
-                <i class="fas fa-plus"></i> Add Farmer Group
+                <i class="fas fa-plus"></i>Farmer Group
             </a>
         </div>
-    </div>
-
     <!-- Search Form -->
-    <div class="card mb-4">
         <div class="card-body">
-            <form method="get" class="row g-3">
+            {% comment %} <form method="get" class="row g-3">
                 <div class="col-md-8">
                     <div class="input-group">
                         <input type="text" name="search" class="form-control" placeholder="Search farmer groups..." value="{{ search_query }}">
@@ -62,14 +60,10 @@
                         </a>
                     {% endif %}
                 </div>
-            </form>
-        </div>
-    </div>
+            </form> {% endcomment %}
 
-    <!-- Farmer Groups Table -->
-     {% if farmer_groups %}
-    <div class="card">
-        <div class="card-body">
+            <!-- Farmer Groups Table -->
+            {% if farmer_groups %}
             <div class="table-responsive">
                 <table id="datatableDefault" class="table text-nowrap w-100">
                     <thead>
@@ -135,7 +129,7 @@
                 </table>
             </div>
 
-            <!-- Pagination -->
+            {% comment %} <!-- Pagination -->
             {% if is_paginated %}
             <nav aria-label="Page navigation" class="mt-4">
                 <ul class="pagination justify-content-center">
@@ -178,7 +172,7 @@
                     {% endif %}
                 </ul>
             </nav>
-            {% endif %}
+            {% endif %} {% endcomment %}
             {% else %}
                 <div class="alert alert-info">
                     {% if search_query %}
@@ -191,4 +185,5 @@
         </div>
     </div>
 </div>
+
 {% endblock %} 

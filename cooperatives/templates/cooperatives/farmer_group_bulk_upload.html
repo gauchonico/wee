@@ -17,15 +17,21 @@
                 <p>Upload a CSV file with the following columns:</p>
                 <ul>
                     <li><strong>name</strong> - Name of the farmer group (required)</li>
-                    <li><strong>code</strong> - Unique code for the farmer group (required)</li>
-                    <li><strong>cooperative</strong> - Name of the cooperative (optional)</li>
-                    <li><strong>district</strong> - Name of the district (optional)</li>
-                    <li><strong>sub_county</strong> - Name of the sub-county (optional)</li>
+                    <li><strong>code</strong> - Unique code for the farmer group (optional, will be auto-generated if not provided)</li>
+                    <li><strong>cooperative</strong> - Name of the cooperative (required)</li>
+                    <li><strong>district</strong> - Name of the district (required)</li>
+                    <li><strong>subcounty</strong> - Name of the sub-county (required)</li>
+                    <li><strong>parish</strong> - Name of the parish (optional)</li>
                     <li><strong>village</strong> - Name of the village (optional)</li>
-                    <li><strong>contact_person</strong> - Name of the contact person (optional)</li>
                     <li><strong>phone_number</strong> - Phone number of the contact person (optional)</li>
+                    <li><strong>is_vsla</strong> - Whether the group is a VSLA (true/false) (optional)</li>
                 </ul>
-                <p><strong>Note:</strong> The cooperative, district, and sub-county must already exist in the system.</p>
+                <p><strong>Note:</strong></p>
+                <ul>
+                    <li>The cooperative, district, and sub-county must already exist in the system</li>
+                    <li>Column names are case-sensitive</li>
+                    <li>For is_vsla, use 'true' or 'false' (case-insensitive)</li>
+                </ul>
             </div>
 
             <div class="mb-3">
