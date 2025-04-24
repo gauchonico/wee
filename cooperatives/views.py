@@ -1,24 +1,26 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.mixins import UserPassesTestMixin
 from django.contrib.auth.decorators import login_required
-from django.urls import reverse_lazy
+from django.urls import reverse, reverse_lazy
 from django.views.generic import ListView, DetailView, CreateView, UpdateView, DeleteView, View, TemplateView
 from django.contrib import messages
 from .models import (
     District, County, SubCounty, Parish, Village, PaymentMode,
-    Cooperative, FarmerGroup, Member, Product, Price, Unit, Supplier, SupplierProduct
+    Cooperative, FarmerGroup, Member, Product, Price, Unit, Supplier, SupplierProduct,
+    PlantingAllocation, Collection
 )
 from .forms import (
     DistrictForm, CountyForm, SubCountyForm, ParishForm, VillageForm, PaymentModeForm,
     CooperativeForm, FarmerGroupForm, MemberForm, ProductForm, PriceForm, UnitForm, CooperativeBulkUploadForm,
     ParishBulkUploadForm, VillageBulkUploadForm, SubCountyBulkUploadForm, CountyBulkUploadForm, DistrictBulkUploadForm,
-    FarmerGroupBulkUploadForm, MemberBulkUploadForm, SunflowerAcreageBulkUploadForm, SupplierForm, SupplierProductBulkUploadForm
+    FarmerGroupBulkUploadForm, MemberBulkUploadForm, SunflowerAcreageBulkUploadForm, SupplierForm, SupplierProductBulkUploadForm,
+    PlantingAllocationForm, CollectionForm
 )
 from .mixins import CustomLoginRequiredMixin
 import csv
 import io
 from datetime import datetime
-from django.db.models import Q, Count
+from django.db.models import Q, Count, Sum
 from django.views.generic.edit import FormView
 import random
 import json
@@ -402,6 +404,22 @@ class CooperativeDetailView(CustomLoginRequiredMixin, DetailView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['farmer_groups'] = self.object.farmer_groups.all()
+        context['members'] = self.object.cooperative_members.select_related(
+            'farmer_group', 'district'
+        ).all()
+        return context
+
+class CooperativeMemberListView(CustomLoginRequiredMixin, DetailView):
+    model = Cooperative
+    template_name = 'cooperatives/cooperative_memberlist.html'
+    context_object_name = 'cooperative'
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['farmer_groups'] = self.object.farmer_groups.all()
+        context['members'] = self.object.cooperative_members.select_related(
+            'farmer_group', 'district'
+        ).all()
         return context
 
 class CooperativeCreateView(CustomLoginRequiredMixin, CreateView):
@@ -454,6 +472,7 @@ class FarmerGroupListView(CustomLoginRequiredMixin, ListView):
         search_query = self.request.GET.get('search', '')
         
         if search_query:
+            # Use Q objects to create a more flexible search
             queryset = queryset.filter(
                 Q(name__icontains=search_query) |
                 Q(code__icontains=search_query) |
@@ -466,6 +485,7 @@ class FarmerGroupListView(CustomLoginRequiredMixin, ListView):
                 Q(phone_number__icontains=search_query)
             )
         
+        # Always include cooperative in the select_related to avoid N+1 queries
         return queryset.select_related(
             'cooperative',
             'district',
@@ -477,6 +497,11 @@ class FarmerGroupListView(CustomLoginRequiredMixin, ListView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['search_query'] = self.request.GET.get('search', '')
+        
+        # Add total count of farmer groups for reference
+        context['total_farmer_groups'] = FarmerGroup.objects.count()
+        context['filtered_count'] = self.get_queryset().count()
+        
         return context
 
 class FarmerGroupDetailView(CustomLoginRequiredMixin, DetailView):
@@ -572,6 +597,11 @@ class MemberDetailView(CustomLoginRequiredMixin, DetailView):
     model = Member
     template_name = 'cooperatives/member_detail.html'
     context_object_name = 'member'
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['planting_allocations'] = self.object.planting_allocations.select_related('product').all()
+        return context
 
 class MemberCreateView(CustomLoginRequiredMixin, CreateView):
     model = Member
@@ -1181,6 +1211,12 @@ class FarmerGroupBulkUploadView(CustomLoginRequiredMixin, View):
                         if missing_products:
                             error_messages.append(f"Row {csv_data.line_num}: Products not found: {', '.join(missing_products)}")
 
+                    # Get gender with default value
+                    gender = row.get('gender', 'O').upper()  # Default to 'O' if not specified
+                    if gender not in ['M', 'F', 'O']:
+                        errors.append(f"Row {csv_data.line_num}: Invalid gender value '{gender}'. Must be 'M', 'F', or 'O'")
+                        continue
+
                     # Create member instance
                     member = Member.objects.create(
                         member_id=row['userId'],
@@ -1265,7 +1301,7 @@ class MemberBulkUploadView(CustomLoginRequiredMixin, FormView):
         for row in csv_data:
             try:
                 # Validate gender
-                gender = row.get('gender', '').upper()
+                gender = row.get('gender', 'O').upper()
                 if gender not in ['M', 'F', 'O']:
                     raise ValueError(f"Invalid gender value '{gender}'. Must be 'M', 'F', or 'O'")
 
@@ -1342,16 +1378,22 @@ class MemberBulkUploadView(CustomLoginRequiredMixin, FormView):
                 # Handle sub-county
                 try:
                     # First try to get sub-county in the specified county
-                    sub_county = SubCounty.objects.get(name=row['subcounty'], county=county)
+                    sub_county_name = row.get('subcounty', '').strip()
+                    if not sub_county_name:
+                        error_messages.append(f"Row {csv_data.line_num}: Sub-county is required for member '{row['firstname']} {row['surname']}'")
+                        error_count += 1
+                        continue
+                    
+                    sub_county = SubCounty.objects.get(name=sub_county_name, county=county)
                 except SubCounty.DoesNotExist:
                     # If not found in specified county, try to find it in any county
-                    sub_county = SubCounty.objects.filter(name=row['subcounty']).first()
+                    sub_county = SubCounty.objects.filter(name=sub_county_name).first()
                     if sub_county:
                         # Update the county to match the sub-county's actual county
                         county = sub_county.county
-                        messages.info(self.request, f"Row {csv_data.line_num}: Sub-county '{row['subcounty']}' found in county '{county.name}'. County updated to match.")
+                        messages.info(self.request, f"Row {csv_data.line_num}: Sub-county '{sub_county_name}' found in county '{county.name}'. County updated to match.")
                     else:
-                        error_messages.append(f"Row {csv_data.line_num}: Sub-county '{row['subcounty']}' not found in any county")
+                        error_messages.append(f"Row {csv_data.line_num}: Sub-county '{sub_county_name}' not found in any county. Please ensure the sub-county exists in the system.")
                         error_count += 1
                         continue
                 
@@ -1845,3 +1887,331 @@ class SupplierProductBulkUploadView(CustomLoginRequiredMixin, View):
             form = self.form_class()
         
         return render(request, self.template_name, {'form': form})
+
+class MemberPlantingAllocationListView(CustomLoginRequiredMixin, ListView):
+    model = PlantingAllocation
+    template_name = 'cooperatives/member_planting_list.html'
+    context_object_name = 'allocations'
+    
+    def get_queryset(self):
+        member = get_object_or_404(Member, pk=self.kwargs['member_pk'])
+        return PlantingAllocation.objects.filter(member=member).select_related('product')
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        member = get_object_or_404(Member, pk=self.kwargs['member_pk'])
+        context['member'] = member
+        # Add debugging information
+        context['member_products'] = member.products.all()
+        context['all_products'] = Product.objects.all()
+        return context
+
+class MemberPlantingAllocationCreateView(CustomLoginRequiredMixin, CreateView):
+    model = PlantingAllocation
+    form_class = PlantingAllocationForm
+    template_name = 'cooperatives/planting_allocation_form.html'
+
+    def get_success_url(self):
+        return reverse('cooperatives:member-planting-list', kwargs={'member_pk': self.kwargs['member_pk']})
+
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs['member'] = get_object_or_404(Member, pk=self.kwargs['member_pk'])
+        return kwargs
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['member'] = get_object_or_404(Member, pk=self.kwargs['member_pk'])
+        return context
+
+    def form_valid(self, form):
+        form.instance.created_by = self.request.user
+        messages.success(self.request, 'Planting allocation created successfully.')
+        return super().form_valid(form)
+
+class MemberPlantingAllocationUpdateView(CustomLoginRequiredMixin, UpdateView):
+    model = PlantingAllocation
+    form_class = PlantingAllocationForm
+    template_name = 'cooperatives/planting_allocation_form.html'
+    
+    def get_success_url(self):
+        return reverse('cooperatives:member-planting-list', kwargs={'member_pk': self.object.member.pk})
+    
+    def form_valid(self, form):
+        messages.success(self.request, 'Planting allocation updated successfully.')
+        return super().form_valid(form)
+
+class MemberCollectionListView(CustomLoginRequiredMixin, ListView):
+    model = Collection
+    template_name = 'cooperatives/member_collection_list.html'
+    context_object_name = 'collections'
+    
+    def get_queryset(self):
+        member = get_object_or_404(Member, pk=self.kwargs['member_pk'])
+        return Collection.objects.filter(member=member).select_related('product', 'unit')
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['member'] = get_object_or_404(Member, pk=self.kwargs['member_pk'])
+        return context
+
+class MemberCollectionCreateView(CustomLoginRequiredMixin, CreateView):
+    model = Collection
+    form_class = CollectionForm
+    template_name = 'cooperatives/collection_form.html'
+    
+    def get_success_url(self):
+        return reverse('cooperatives:member-collection-list', kwargs={'member_pk': self.kwargs['member_pk']})
+    
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs['member'] = get_object_or_404(Member, pk=self.kwargs['member_pk'])
+        return kwargs
+    
+    def form_valid(self, form):
+        form.instance.created_by = self.request.user
+        messages.success(self.request, 'Collection recorded successfully.')
+        return super().form_valid(form)
+
+class MemberCollectionUpdateView(CustomLoginRequiredMixin, UpdateView):
+    model = Collection
+    form_class = CollectionForm
+    template_name = 'cooperatives/collection_form.html'
+    
+    def get_success_url(self):
+        return reverse('cooperatives:member-collection-list', kwargs={'member_pk': self.object.member.pk})
+    
+    def form_valid(self, form):
+        messages.success(self.request, 'Collection updated successfully.')
+        return super().form_valid(form)
+
+class MemberBulkUpdateView(CustomLoginRequiredMixin, View):
+    template_name = 'cooperatives/member_bulk_update.html'
+    success_url = reverse_lazy('cooperatives:member-list')
+
+    def get(self, request):
+        form = MemberBulkUploadForm()
+        return render(request, self.template_name, {'form': form})
+
+    def post(self, request):
+        form = MemberBulkUploadForm(request.POST, request.FILES)
+        if form.is_valid():
+            csv_file = request.FILES['csv_file']
+            decoded_file = csv_file.read().decode('utf-8')
+            io_string = io.StringIO(decoded_file)
+            reader = csv.DictReader(io_string)
+            
+            success_count = 0
+            error_count = 0
+            error_messages = []
+            created_allocations = []
+            created_members = []
+            skipped_allocations = []
+
+            for row in reader:
+                try:
+                    # First get or create cooperative and farmer group
+                    cooperative = None
+                    farmer_group = None
+                    
+                    if row.get('cooperative'):
+                        try:
+                            cooperative = Cooperative.objects.get(fpo_name=row['cooperative'])
+                        except Cooperative.DoesNotExist:
+                            error_messages.append(f"Member {row['member_id']}: Cooperative '{row['cooperative']}' not found")
+                            error_count += 1
+                            continue
+                    
+                    if row.get('farmer_group') and cooperative:
+                        try:
+                            farmer_group = FarmerGroup.objects.filter(
+                                name=row['farmer_group'],
+                                cooperative=cooperative
+                            ).first()
+                            
+                            if not farmer_group:
+                                error_messages.append(f"Member {row['member_id']}: Farmer group '{row['farmer_group']}' not found in cooperative '{cooperative.fpo_name}'")
+                                error_count += 1
+                                continue
+                        except Exception as e:
+                            error_messages.append(f"Member {row['member_id']}: Error setting farmer group - {str(e)}")
+                            error_count += 1
+                            continue
+                    
+                    # Try to get the member, or create a new one if not found
+                    try:
+                        member = Member.objects.get(member_id=row['member_id'])
+                    except Member.DoesNotExist:
+                        # Create a new member with default values and assigned cooperative/farmer group
+                        member = Member.objects.create(
+                            member_id=row['member_id'],
+                            first_name=row.get('first_name', 'Unknown'),
+                            surname=row.get('surname', 'Unknown'),
+                            phone_number=row.get('phone_number', ''),
+                            gender=row.get('gender', 'O'),
+                            role='member',
+                            cooperative=cooperative,
+                            farmer_group=farmer_group,
+                            created_by=request.user
+                        )
+                        created_members.append(member.member_id)
+                    
+                    # Update member details
+                    if row.get('land_acreage'):
+                        member.land_acres = float(row['land_acreage'])
+                    if row.get('shea_trees'):
+                        member.shea_trees = int(row['shea_trees'])
+                    
+                    # Update cooperative and farmer group if they weren't set during creation
+                    if cooperative and not member.cooperative:
+                        member.cooperative = cooperative
+                    if farmer_group and not member.farmer_group:
+                        member.farmer_group = farmer_group
+                    
+                    # Update products if provided
+                    if row.get('products'):
+                        product_names = [name.strip() for name in row['products'].split(',')]
+                        products = Product.objects.filter(name__in=product_names)
+                        member.products.set(products)
+                    
+                    member.save()
+                    
+                    # Create planting allocation for sunflower if acreage provided
+                    if row.get('sunflower_acreage'):
+                        try:
+                            sunflower = Product.objects.get(name='Sunflower')
+                            planting_date = datetime.now().date()
+                            harvest_date = planting_date.replace(year=planting_date.year + 1)
+                            
+                            # Check if allocation already exists
+                            existing_allocation = PlantingAllocation.objects.filter(
+                                member=member,
+                                product=sunflower,
+                                planting_date=planting_date
+                            ).first()
+                            
+                            if existing_allocation:
+                                # Skip if allocation exists
+                                skipped_allocations.append(member.member_id)
+                                continue
+                            else:
+                                # Create new allocation
+                                allocation = PlantingAllocation.objects.create(
+                                    member=member,
+                                    product=sunflower,
+                                    allocated_acres=float(row['sunflower_acreage']),
+                                    planting_date=planting_date,
+                                    expected_harvest_date=harvest_date,
+                                    status='planted',
+                                    notes=f"Bulk update: Sunflower planting allocation created with {row['sunflower_acreage']} acres. Expected harvest in one year."
+                                )
+                                created_allocations.append(allocation)
+                        except Product.DoesNotExist:
+                            error_messages.append(f"Member {member.member_id}: Sunflower product not found in database")
+                            error_count += 1
+                            continue
+                    
+                    success_count += 1
+                    
+                except ValueError as e:
+                    error_messages.append(f"Member {row['member_id']}: Invalid numeric value - {str(e)}")
+                    error_count += 1
+                except Exception as e:
+                    error_messages.append(f"Member {row['member_id']}: {str(e)}")
+                    error_count += 1
+
+            # Add messages for user feedback
+            if success_count > 0:
+                messages.success(request, f"Successfully updated {success_count} members")
+                if created_members:
+                    messages.info(request, f"Created {len(created_members)} new members: {', '.join(created_members)}")
+                if created_allocations:
+                    messages.info(request, f"Created {len(created_allocations)} new sunflower planting allocations")
+                if skipped_allocations:
+                    messages.info(request, f"Skipped {len(skipped_allocations)} members with existing allocations: {', '.join(skipped_allocations)}")
+            if error_count > 0:
+                messages.warning(request, f"Failed to update {error_count} members")
+                for error in error_messages[:5]:  # Show first 5 errors
+                    messages.error(request, error)
+                if len(error_messages) > 5:
+                    messages.warning(request, f"... and {len(error_messages) - 5} more errors")
+
+            return redirect(self.success_url)
+        return render(request, self.template_name, {'form': form})
+
+class PlantingAnalyticsView(TemplateView):
+    template_name = 'cooperatives/planting_analytics.html'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        
+        # Get total members and planting allocations
+        context['total_members'] = Member.objects.count()
+        context['total_allocations'] = PlantingAllocation.objects.count()
+        
+        # Get product-wise statistics
+        product_stats = PlantingAllocation.objects.values('product').annotate(
+            total_acres=Sum('allocated_acres'),
+            member_count=Count('member', distinct=True)
+        ).order_by('-total_acres')
+        
+        # Calculate average acres per member for each product
+        for stat in product_stats:
+            stat['average_acres'] = stat['total_acres'] / stat['member_count'] if stat['member_count'] > 0 else 0
+            stat['product'] = Product.objects.get(pk=stat['product'])
+        
+        context['product_stats'] = product_stats
+        
+        # Get cooperative-wise statistics
+        cooperative_stats = PlantingAllocation.objects.values('member__cooperative').annotate(
+            total_acres=Sum('allocated_acres'),
+            member_count=Count('member', distinct=True)
+        ).order_by('-total_acres')
+        
+        # Calculate average acres per member for each cooperative
+        for stat in cooperative_stats:
+            stat['average_acres'] = stat['total_acres'] / stat['member_count'] if stat['member_count'] > 0 else 0
+            stat['cooperative'] = Cooperative.objects.get(pk=stat['member__cooperative'])
+        
+        context['cooperative_stats'] = cooperative_stats
+        
+        # Get status distribution
+        context['status_distribution'] = PlantingAllocation.objects.values('status').annotate(
+            count=Count('id'),
+            total_acres=Sum('allocated_acres')
+        ).order_by('-count')
+        
+        # Get recent planting activities
+        context['recent_plantings'] = PlantingAllocation.objects.select_related(
+            'member', 'product'
+        ).order_by('-planting_date')[:10]
+
+        # Get shea tree statistics
+        context['total_shea_trees'] = Member.objects.aggregate(
+            total_trees=Sum('shea_trees')
+        )['total_trees'] or 0
+
+        # Get member with most shea trees
+        top_shea_member = Member.objects.order_by('-shea_trees').first()
+        if top_shea_member:
+            context['top_shea_member'] = {
+                'name': f"{top_shea_member.first_name} {top_shea_member.surname}",
+                'trees': top_shea_member.shea_trees,
+                'cooperative': top_shea_member.cooperative.fpo_name if top_shea_member.cooperative else 'N/A'
+            }
+        else:
+            context['top_shea_member'] = None
+
+        # Get current sunflower price
+        sunflower = Product.objects.filter(name__icontains='sunflower').first()
+        if sunflower:
+            current_price = Price.objects.filter(product=sunflower).order_by('-created_at').first()
+            context['sunflower_price'] = {
+                'price': current_price.price if current_price else 0,
+                'unit': current_price.unit.name if current_price and current_price.unit else 'N/A',
+                'date': current_price.created_at if current_price else 'N/A'
+            }
+        else:
+            context['sunflower_price'] = None
+
+        return context

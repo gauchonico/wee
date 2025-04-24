@@ -1,0 +1,72 @@
+{% extends 'base.html' %}
+
+{% block page_title %}Planting Allocations - {{ member }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h3 class="card-title">Planting Allocations</h3>
+                    <div>
+                        <a href="{% url 'cooperatives:member-collection-list' member.pk %}" class="btn btn-info btn-sm">
+                            <i class="bi bi-basket"></i> View Collections
+                        </a>
+                        <a href="{% url 'cooperatives:member-planting-create' member.pk %}" class="btn btn-primary btn-sm">
+                            <i class="bi bi-plus-circle"></i> Add New Allocation
+                        </a>
+                        <a href="{% url 'cooperatives:member-detail' member.pk %}" class="btn btn-secondary btn-sm">
+                            <i class="bi bi-arrow-left"></i> Back to Member
+                        </a>
+                    </div>
+                </div>
+                <div class="card-body">
+                    {% if allocations %}
+                    <div class="table-responsive">
+                        <table class="table table-striped table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Product</th>
+                                    <th>Allocated Acres</th>
+                                    <th>Planting Date</th>
+                                    <th>Expected Harvest</th>
+                                    <th>Actual Harvest</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for allocation in allocations %}
+                                <tr>
+                                    <td>{{ allocation.product }}</td>
+                                    <td>{{ allocation.allocated_acres }}</td>
+                                    <td>{{ allocation.planting_date|default:"-" }}</td>
+                                    <td>{{ allocation.expected_harvest_date|default:"-" }}</td>
+                                    <td>{{ allocation.actual_harvest_date|default:"-" }}</td>
+                                    <td>
+                                        <span class="badge bg-{{ allocation.status }}">
+                                            {{ allocation.get_status_display }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <a href="{% url 'cooperatives:member-planting-update' allocation.pk %}" class="btn btn-sm btn-warning">
+                                            <i class="bi bi-pencil"></i>
+                                        </a>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="alert alert-info">
+                        <i class="bi bi-info-circle"></i> No planting allocations found. <a href="{% url 'cooperatives:member-planting-create' member.pk %}">Add one now</a>.
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

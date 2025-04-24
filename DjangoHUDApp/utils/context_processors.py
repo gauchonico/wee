@@ -22,10 +22,10 @@ def sidebar_menu(request):
 		'text': 'Dashboard',
 		'name': 'index'
 	}, {
-		'url': '/analytics',
+		'url': '/cooperatives/planting-analytics',
 		'icon': 'bi bi-bar-chart',
-		'text': 'Analytics',
-		'name': 'analytics'
+		'text': 'Land Analytics',
+		'name': 'planting-analytics'
 	}, {
 		'icon': 'bi bi-envelope',
 		'text': 'Email',

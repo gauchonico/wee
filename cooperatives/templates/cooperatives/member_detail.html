@@ -174,6 +174,64 @@
                             </table>
                         </div>
                     </div>
+
+                    <div class="row mt-4">
+                        <div class="col-12">
+                            <div class="card">
+                                <div class="card-header d-flex justify-content-between align-items-center">
+                                    <h4 class="card-title mb-0">Planting Allocations</h4>
+                                    <div>
+                                        <a href="{% url 'cooperatives:member-planting-list' member_pk=member.pk %}" class="btn btn-primary btn-sm">
+                                            <i class="bi bi-plus-circle"></i> Land Planting Allocation
+                                        </a>
+                                        <a href="{% url 'cooperatives:member-collection-list' member.pk %}" class="btn btn-info btn-sm">
+                                            <i class="bi bi-basket"></i> View Collections
+                                        </a>
+                                    </div>
+                                </div>
+                                <div class="card-body">
+                                    {% if planting_allocations %}
+                                    <div class="table-responsive">
+                                        <table class="table table-bordered table-hover">
+                                            <thead>
+                                                <tr>
+                                                    <th>Product</th>
+                                                    <th>Allocated Acres</th>
+                                                    <th>Planting Date</th>
+                                                    <th>Expected Harvest</th>
+                                                    <th>Status</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {% for allocation in planting_allocations %}
+                                                <tr>
+                                                    <td>{{ allocation.product }}</td>
+                                                    <td>{{ allocation.allocated_acres }}</td>
+                                                    <td>{{ allocation.planting_date|date:"d M Y"|default:"-" }}</td>
+                                                    <td>{{ allocation.expected_harvest_date|date:"d M Y"|default:"-" }}</td>
+                                                    <td>
+                                                        <span class="badge bg-{{ allocation.status }}">
+                                                            {{ allocation.get_status_display }}
+                                                        </span>
+                                                    </td>
+                                                </tr>
+                                                {% endfor %}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                    {% else %}
+                                    <div class="alert alert-info">
+                                        <i class="bi bi-info-circle"></i> No planting allocations found. 
+                                        <a href="{% url 'cooperatives:member-planting-list' member_pk=member.pk %}" class="alert-link">
+                                            Add planting allocations
+                                        </a>
+                                        
+                                    </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>

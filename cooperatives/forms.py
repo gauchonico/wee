@@ -1,7 +1,7 @@
 from django import forms
 from .models import (
     District, County, SubCounty, Parish, Village, PaymentMode,
-    Cooperative, FarmerGroup, Member, Product, Price, Unit, Supplier, SupplierProduct
+    Cooperative, FarmerGroup, Member, Product, Price, Unit, Supplier, SupplierProduct, PlantingAllocation, Collection
 )
 
 class DistrictForm(forms.ModelForm):
@@ -321,4 +321,56 @@ class SupplierProductBulkUploadForm(forms.Form):
     csv_file = forms.FileField(
         label='CSV File',
         help_text='Upload a CSV file with columns: supplier_name, name, category, unit, price_per_unit. Example: "ABC Suppliers","Maize Seeds","Seeds","Kg",5000'
-    ) 
+    )
+
+class PlantingAllocationForm(forms.ModelForm):
+    class Meta:
+        model = PlantingAllocation
+        fields = [
+            'product', 'allocated_acres', 'planting_date',
+            'expected_harvest_date', 'status', 'notes'
+        ]
+        widgets = {
+            'product': forms.Select(attrs={'class': 'form-control'}),
+            'allocated_acres': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
+            'planting_date': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+            'expected_harvest_date': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+            'status': forms.Select(attrs={'class': 'form-control'}),
+            'notes': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        member = kwargs.pop('member', None)
+        super().__init__(*args, **kwargs)
+        if member:
+            self.instance.member = member
+            # Filter products to only those the member can plant
+            self.fields['product'].queryset = member.products.all()
+
+class CollectionForm(forms.ModelForm):
+    class Meta:
+        model = Collection
+        fields = [
+            'product', 'collection_date', 'quantity',
+            'unit', 'unit_price', 'quality_grade', 'notes'
+        ]
+        widgets = {
+            'product': forms.Select(attrs={'class': 'form-control'}),
+            'collection_date': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+            'quantity': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
+            'unit': forms.Select(attrs={'class': 'form-control'}),
+            'unit_price': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
+            'quality_grade': forms.Select(attrs={'class': 'form-control'}),
+            'notes': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        member = kwargs.pop('member', None)
+        super().__init__(*args, **kwargs)
+        if member:
+            self.instance.member = member
+            # Filter products to only those the member has planted
+            self.fields['product'].queryset = Product.objects.filter(
+                planting_allocations__member=member,
+                planting_allocations__status='harvested'
+            ).distinct() 

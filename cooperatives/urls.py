@@ -59,6 +59,7 @@ urlpatterns = [
     path('cooperatives/<int:pk>/update/', views.CooperativeUpdateView.as_view(), name='cooperative-update'),
     path('cooperatives/<int:pk>/delete/', views.CooperativeDeleteView.as_view(), name='cooperative-delete'),
     path('cooperatives/bulk-upload/', views.CooperativeBulkUploadView.as_view(), name='cooperative-bulk-upload'),
+    path('cooperatives/<int:pk>/members/', views.CooperativeMemberListView.as_view(), name='cooperative-member-list'),
     
     # FarmerGroup URLs
     path('farmer-groups/', views.FarmerGroupListView.as_view(), name='farmer-group-list'),
@@ -77,6 +78,17 @@ urlpatterns = [
     path('members/bulk-upload/', views.MemberBulkUploadView.as_view(), name='member-bulk-upload'),
     path('members/sunflower-acreage/bulk-upload/', views.SunflowerAcreageBulkUploadView.as_view(), name='sunflower-acreage-bulk-upload'),
     path('members/assign-products/', views.MemberProductAssignmentView.as_view(), name='member-product-assignment'),
+    path('members/bulk-update/', views.MemberBulkUpdateView.as_view(), name='member-bulk-update'),
+    
+    # Planting Allocation URLs
+    path('members/<int:member_pk>/planting/', views.MemberPlantingAllocationListView.as_view(), name='member-planting-list'),
+    path('members/<int:member_pk>/planting/create/', views.MemberPlantingAllocationCreateView.as_view(), name='member-planting-create'),
+    path('members/planting/<int:pk>/update/', views.MemberPlantingAllocationUpdateView.as_view(), name='member-planting-update'),
+    
+    # Collection URLs
+    path('members/<int:member_pk>/collections/', views.MemberCollectionListView.as_view(), name='member-collection-list'),
+    path('members/<int:member_pk>/collections/create/', views.MemberCollectionCreateView.as_view(), name='member-collection-create'),
+    path('members/collections/<int:pk>/update/', views.MemberCollectionUpdateView.as_view(), name='member-collection-update'),
     
     # Product URLs
     path('products/', views.ProductListView.as_view(), name='product-list'),
@@ -115,4 +127,6 @@ urlpatterns = [
     path('supplier-products/<int:pk>/update/', views.SupplierProductUpdateView.as_view(), name='supplier_product_update'),
     path('supplier-products/<int:pk>/delete/', views.SupplierProductDeleteView.as_view(), name='supplier_product_delete'),
     path('supplier-products/bulk-upload/', views.SupplierProductBulkUploadView.as_view(), name='supplier_product_bulk_upload'),
+
+    path('planting-analytics/', views.PlantingAnalyticsView.as_view(), name='planting-analytics'),
 ] 

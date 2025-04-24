@@ -1,0 +1,294 @@
+{% extends 'base.html' %}
+
+{% load static %}
+
+{% comment %} {% load humanize %} {% endcomment %}
+{% block title %}Planting Analytics{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col-12">
+            <h1 class="h3 mb-0">Planting Analytics Dashboard</h1>
+        </div>
+    </div>
+
+    <!-- Summary Cards -->
+    <div class="row mb-4">
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-0 shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-uppercase mb-1">
+                                Members</div>
+                            
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-users fa-2x text-theme"></i>
+                        </div>
+                    </div>
+                    <div class="flex-1">
+                        
+                        <div class="h5 mb-2 font-weight-bold">{{ total_members }}</div>
+                        <div class="progress h-3px bg-secondary-transparent-2 mb-1">
+                            <div class="progress-bar bg-theme" style="width: 20%"></div>
+                        </div>
+                        <div class="fs-11px text-inverse text-opacity-50 mb-2 text-truncate">
+                            Active Members
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-0 shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-uppercase mb-1">
+                                Acreage</div>
+                            
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-seedling fa-2x text-theme"></i>
+                        </div>
+                    </div>
+                    <div class="flex-1">
+                        
+                        <div class="mb-2 fs-5 text-truncate">{{ total_allocations }}</div>
+                        <div class="progress h-3px bg-secondary-transparent-2 mb-1">
+                            <div class="progress-bar bg-theme" style="width: 20%"></div>
+                        </div>
+                        <div class="fs-11px text-inverse text-opacity-50 mb-2 text-truncate">
+                            Total Available Acres
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-0 shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-uppercase mb-1">
+                                Shea Trees</div>
+                            
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-tree fa-2x text-theme"></i>
+                        </div>
+                    </div>
+                    <div class="flex-1">
+                        
+                        <div class="h5 mb-2 font-weight-bold">{{ total_shea_trees }}</div>
+                        <div class="progress h-3px bg-secondary-transparent-2 mb-1">
+                            <div class="progress-bar bg-theme" style="width: 20%"></div>
+                        </div>
+                        <div class="fs-11px text-inverse text-opacity-50 mb-2 text-truncate">
+                            Total Trees Planted
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {% if sunflower_price %}
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-0 shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-uppercase mb-1">
+                                Sunflower Price</div>
+                            
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-dollar-sign fa-2x text-theme"></i>
+                        </div>
+                    </div>
+                    <div class="flex-1">
+                        
+                        <div class="h5 mb-2 font-weight-bold">{{ sunflower_price.price }} <span class="text-muted fs-10px">/Kg</span></div>
+                        <div class="progress h-3px bg-secondary-transparent-2 mb-1">
+                            <div class="progress-bar bg-theme" style="width: 20%"></div>
+                        </div>
+                        <div class="fs-11px text-inverse text-opacity-50 mb-2 text-truncate">
+                            as of {{ sunflower_price.date|date:"Y-m-d" }}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Top Shea Tree Member -->
+    {% if top_shea_member %}
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card border-0 shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold">Top Shea Tree Farmer</h6>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h4 class="">{{ top_shea_member.name }}</h4>
+                            <p class="text-theme">Cooperative: {{ top_shea_member.cooperative }}</p>
+                        </div>
+                        <div class="col-md-6 text-right">
+                            <h2 class="text-theme">{{ top_shea_member.trees }}</h2>
+                            <p class="">Shea Trees</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Product Statistics -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-theme">Product-wise Statistics</h6>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-bordered" width="100%" cellspacing="0">
+                            <thead>
+                                <tr>
+                                    <th>Product</th>
+                                    <th>Total Acres</th>
+                                    <th>Number of Members</th>
+                                    <th>Average Acres per Member</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for stat in product_stats %}
+                                <tr>
+                                    <td>{{ stat.product.name }}</td>
+                                    <td>{{ stat.total_acres|floatformat:2 }}</td>
+                                    <td>{{ stat.member_count }}</td>
+                                    <td>{{ stat.average_acres|floatformat:2 }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Cooperative Statistics -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-theme">Cooperative-wise Statistics</h6>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-bordered" width="100%" cellspacing="0">
+                            <thead>
+                                <tr>
+                                    <th>Cooperative</th>
+                                    <th>Total Acres</th>
+                                    <th>Number of Members</th>
+                                    <th>Average Acres per Member</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for stat in cooperative_stats %}
+                                <tr>
+                                    <td>{{ stat.cooperative.fpo_name }}</td>
+                                    <td>{{ stat.total_acres|floatformat:2 }}</td>
+                                    <td>{{ stat.member_count }}</td>
+                                    <td>{{ stat.average_acres|floatformat:2 }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Status Distribution -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-theme">Planting Status Distribution</h6>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-bordered" width="100%" cellspacing="0">
+                            <thead>
+                                <tr>
+                                    <th>Status</th>
+                                    <th>Number of Allocations</th>
+                                    <th>Total Acres</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for stat in status_distribution %}
+                                <tr>
+                                    <td>{{ stat.status|title }}</td>
+                                    <td>{{ stat.count }}</td>
+                                    <td>{{ stat.total_acres|floatformat:2 }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Planting Activities -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-theme">Recent Planting Activities</h6>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-bordered" width="100%" cellspacing="0">
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Member</th>
+                                    <th>Product</th>
+                                    <th>Acres</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for planting in recent_plantings %}
+                                <tr>
+                                    <td>{{ planting.planting_date|date:"Y-m-d" }}</td>
+                                    <td>{{ planting.member.first_name }} {{ planting.member.surname }}</td>
+                                    <td>{{ planting.product.name }}</td>
+                                    <td>{{ planting.allocated_acres|floatformat:2 }}</td>
+                                    <td>{{ planting.status|title }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

@@ -130,7 +130,7 @@
                                     <tbody>
                                         {% for member in members %}
                                         <tr>
-                                            <td>{{ member.name }}</td>
+                                            <td>{{ member.first_name }} {{ member.surname }}</td>
                                             <td>{{ member.member_id }}</td>
                                             <td>{{ member.get_role_display }}</td>
                                             <td>{{ member.phone_number }}</td>

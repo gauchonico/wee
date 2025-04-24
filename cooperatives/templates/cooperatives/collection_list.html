@@ -1,0 +1,76 @@
+{% extends 'base.html' %}
+
+{% block page_title %}
+    Collections - {{ planting_allocation.product }} ({{ planting_allocation.member }})
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">
+                        Collections for {{ planting_allocation.product }}
+                    </h3>
+                    <div class="card-tools">
+                        <a href="{% url 'cooperatives:member-collection-create' planting_allocation.member.pk %}?planting={{ planting_allocation.pk }}" class="btn btn-primary btn-sm">
+                            <i class="bi bi-plus-circle"></i> Add Collection
+                        </a>
+                        <a href="{% url 'cooperatives:member-planting-list' planting_allocation.member.pk %}" class="btn btn-secondary btn-sm">
+                            <i class="bi bi-arrow-left"></i> Back to Planting
+                        </a>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-bordered table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Quantity (kg)</th>
+                                    <th>Quality Grade</th>
+                                    <th>Price per kg</th>
+                                    <th>Total Value</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for collection in collections %}
+                                <tr>
+                                    <td>{{ collection.collection_date|date:"d M Y" }}</td>
+                                    <td>{{ collection.quantity }}</td>
+                                    <td>{{ collection.get_quality_grade_display }}</td>
+                                    <td>{{ collection.price_per_kg }}</td>
+                                    <td>{{ collection.total_value }}</td>
+                                    <td>
+                                        <span class="badge badge-{{ collection.status|lower }}">
+                                            {{ collection.get_status_display }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <a href="{% url 'cooperatives:member-collection-update' collection.pk %}" class="btn btn-sm btn-info">
+                                            <i class="bi bi-pencil"></i> Edit
+                                        </a>
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="7" class="text-center">
+                                        No collections recorded yet.
+                                        <a href="{% url 'cooperatives:member-collection-create' planting_allocation.member.pk %}?planting={{ planting_allocation.pk }}" class="btn btn-primary btn-sm ml-2">
+                                            <i class="bi bi-plus-circle"></i> Add First Collection
+                                        </a>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

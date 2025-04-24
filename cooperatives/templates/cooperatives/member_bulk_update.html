@@ -1,0 +1,66 @@
+{% extends 'base.html' %}
+
+{% block page_title %}
+    Bulk Update Members
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">Bulk Update Members</h3>
+                    <div class="card-tools">
+                        <a href="{% url 'cooperatives:member-list' %}" class="btn btn-secondary btn-sm">
+                            <i class="bi bi-arrow-left"></i> Back to List
+                        </a>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-info">
+                        <h5><i class="bi bi-info-circle"></i> Instructions</h5>
+                        <p>Upload a CSV file with the following columns:</p>
+                        <ul>
+                            <li><strong>member_id</strong> - The ID of the member to update</li>
+                            <li><strong>cooperative</strong> - (Optional) The name of the cooperative</li>
+                            <li><strong>farmer_group</strong> - (Optional) The name of the farmer group</li>
+                            <li><strong>products</strong> - (Optional) Comma-separated list of product names</li>
+                            <li><strong>land_acreage</strong> - (Optional) Total land acreage</li>
+                            <li><strong>shea_trees</strong> - (Optional) Number of shea trees</li>
+                            <li><strong>sunflower_acreage</strong> - (Optional) Acreage for sunflower planting</li>
+                        </ul>
+                        <p>For sunflower acreage, a new planting allocation will be created with:</p>
+                        <ul>
+                            <li>Planting date set to today</li>
+                            <li>Harvest date set to one year from planting</li>
+                            <li>Status set to 'planted'</li>
+                        </ul>
+                    </div>
+                    
+                    <form method="post" enctype="multipart/form-data">
+                        {% csrf_token %}
+                        <div class="form-group">
+                            <label for="{{ form.csv_file.id_for_label }}">CSV File</label>
+                            {{ form.csv_file }}
+                            {% if form.csv_file.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {{ form.csv_file.errors }}
+                                </div>
+                            {% endif %}
+                        </div>
+                        <div class="mt-4">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-upload"></i> Upload and Process
+                            </button>
+                            <a href="{% url 'cooperatives:member-list' %}" class="btn btn-secondary">
+                                <i class="bi bi-x-circle"></i> Cancel
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

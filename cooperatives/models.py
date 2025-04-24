@@ -1,5 +1,7 @@
 from django.db import models
 from django.contrib.auth.models import User
+from django.core.exceptions import ValidationError
+from django.utils import timezone
 
 class Unit(models.Model):
     name = models.CharField(max_length=100)  # e.g. "Kilogram", "Piece", "Litre"
@@ -310,5 +312,108 @@ class SupplierProduct(models.Model):
 
     def __str__(self):
         return f"{self.name} - {self.supplier.name}"
+
+class PlantingAllocation(models.Model):
+    member = models.ForeignKey(Member, on_delete=models.CASCADE, related_name='planting_allocations')
+    product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='planting_allocations')
+    allocated_acres = models.DecimalField(max_digits=10, decimal_places=2, help_text="Number of acres allocated for this product")
+    planting_date = models.DateField(null=True, blank=True, help_text="Date when planting was done")
+    expected_harvest_date = models.DateField(null=True, blank=True, help_text="Expected date of harvest")
+    actual_harvest_date = models.DateField(null=True, blank=True, help_text="Actual date of harvest")
+    status = models.CharField(
+        max_length=20,
+        choices=(
+            ('planned', 'Planned'),
+            ('planted', 'Planted'),
+            ('growing', 'Growing'),
+            ('harvested', 'Harvested'),
+            ('cancelled', 'Cancelled')
+        ),
+        default='planned'
+    )
+    notes = models.TextField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = 'Planting Allocation'
+        verbose_name_plural = 'Planting Allocations'
+        unique_together = ['member', 'product', 'planting_date']
+        indexes = [
+            models.Index(fields=['member', 'product']),
+            models.Index(fields=['planting_date', 'expected_harvest_date']),
+        ]
+
+    def __str__(self):
+        return f"{self.member} - {self.product} ({self.allocated_acres} acres)"
+
+    def clean(self):
+        # Validate that total allocated acres don't exceed member's total land
+        if self.allocated_acres:
+            total_allocated = PlantingAllocation.objects.filter(
+                member=self.member
+            ).exclude(
+                pk=self.pk
+            ).aggregate(
+                total=models.Sum('allocated_acres')
+            )['total'] or 0
+            
+            if total_allocated + self.allocated_acres > self.member.land_acres:
+                raise ValidationError(
+                    f"Total allocated acres ({total_allocated + self.allocated_acres}) exceeds member's total land ({self.member.land_acres} acres)"
+                )
+
+class Collection(models.Model):
+    member = models.ForeignKey(Member, on_delete=models.CASCADE, related_name='collections')
+    product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='collections')
+    collection_date = models.DateField(help_text="Date when the product was collected")
+    quantity = models.DecimalField(max_digits=10, decimal_places=2, help_text="Quantity of product collected")
+    unit = models.ForeignKey(Unit, on_delete=models.PROTECT, related_name='collections')
+    unit_price = models.DecimalField(max_digits=10, decimal_places=2, help_text="Price per unit")
+    total_price = models.DecimalField(max_digits=10, decimal_places=2, help_text="Total price (quantity * unit_price)")
+    quality_grade = models.CharField(
+        max_length=20,
+        choices=(
+            ('A', 'Grade A'),
+            ('B', 'Grade B'),
+            ('C', 'Grade C'),
+            ('D', 'Grade D')
+        ),
+        default='A'
+    )
+    notes = models.TextField(null=True, blank=True)
+    created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name='created_collections')
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = 'Collection'
+        verbose_name_plural = 'Collections'
+        indexes = [
+            models.Index(fields=['member', 'product']),
+            models.Index(fields=['collection_date']),
+        ]
+
+    def __str__(self):
+        return f"{self.member} - {self.product} ({self.quantity} {self.unit})"
+
+    def save(self, *args, **kwargs):
+        # Calculate total price before saving
+        if self.quantity and self.unit_price:
+            self.total_price = self.quantity * self.unit_price
+        super().save(*args, **kwargs)
+
+    def clean(self):
+        # Validate that collection date is not in the future
+        if self.collection_date and self.collection_date > timezone.now().date():
+            raise ValidationError("Collection date cannot be in the future")
+        
+        # Validate that quantity is positive
+        if self.quantity and self.quantity <= 0:
+            raise ValidationError("Quantity must be greater than zero")
+        
+        # Validate that unit price is positive
+        if self.unit_price and self.unit_price <= 0:
+            raise ValidationError("Unit price must be greater than zero")
 
 

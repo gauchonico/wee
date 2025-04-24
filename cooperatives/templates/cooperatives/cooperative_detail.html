@@ -3,6 +3,30 @@
 {% load static %}
 
 {% block page_title %}{{ cooperative.fpo_name }}{% endblock %}
+{% block css %}
+	<link href="{% static 'plugins/datatables.net-bs5/css/dataTables.bootstrap5.min.css' %}" rel="stylesheet" />
+	<link href="{% static 'plugins/datatables.net-buttons-bs5/css/buttons.bootstrap5.min.css' %}" rel="stylesheet" />
+	<link href="{% static 'plugins/datatables.net-responsive-bs5/css/responsive.bootstrap5.min.css' %}" rel="stylesheet" />
+	<link href="{% static 'plugins/bootstrap-table/dist/bootstrap-table.min.css' %}" rel="stylesheet" />
+{% endblock %}
+
+{% block js %}
+	<script src="{% static 'plugins/@highlightjs/cdn-assets/highlight.min.js' %}"></script>
+	<script src="{% static 'js/demo/highlightjs.demo.js' %}"></script>
+	<script src="{% static 'plugins/datatables.net/js/dataTables.min.js' %}"></script>
+	<script src="{% static 'plugins/datatables.net-bs5/js/dataTables.bootstrap5.min.js' %}"></script>
+	<script src="{% static 'plugins/datatables.net-buttons/js/dataTables.buttons.min.js' %}"></script>
+	<script src="{% static 'plugins/datatables.net-buttons/js/buttons.colVis.min.js' %}"></script>
+	<script src="{% static 'plugins/datatables.net-buttons/js/buttons.flash.min.js' %}"></script>
+	<script src="{% static 'plugins/datatables.net-buttons/js/buttons.html5.min.js' %}"></script>
+	<script src="{% static 'plugins/datatables.net-buttons/js/buttons.print.min.js' %}"></script>
+	<script src="{% static 'plugins/datatables.net-buttons-bs5/js/buttons.bootstrap5.min.js' %}"></script>
+	<script src="{% static 'plugins/datatables.net-responsive/js/dataTables.responsive.min.js' %}"></script>
+	<script src="{% static 'plugins/datatables.net-responsive-bs5/js/responsive.bootstrap5.min.js' %}"></script>
+	<script src="{% static 'plugins/bootstrap-table/dist/bootstrap-table.min.js' %}"></script>
+	<script src="{% static 'js/demo/table-plugins.demo.js' %}"></script>
+	<script src="{% static 'js/demo/sidebar-scrollspy.demo.js' %}"></script>
+{% endblock %}
 
 {% block content %}
 <div class="d-flex justify-content-between mb-3">
@@ -74,7 +98,11 @@
                 <div class="row">
                     <div class="col-md-4">
                         <p class="mb-1 text-muted">Members</p>
-                        <h5>{{ cooperative.member_count }}</h5>
+                        
+                        <a href="{% url 'cooperatives:cooperative-member-list' cooperative.pk %}" class="btn btn-primary btn-sm">
+                            {{ cooperative.member_count }}
+                            <i class="bi bi-eye"></i>
+                        </a>
                     </div>
                     <div class="col-md-4">
                         <p class="mb-1 text-muted">Balance</p>
@@ -90,6 +118,7 @@
     </div>
 </div>
 
+
 <div class="card">
     <div class="card-header d-flex justify-content-between align-items-center">
         <h5 class="card-title mb-0">Farmer Groups</h5>
@@ -100,7 +129,7 @@
     <div class="card-body">
         {% if farmer_groups %}
         <div class="table-responsive">
-            <table class="table table-striped table-hover">
+            <table id="datatableDefault" class="table text-nowrap w-100">
                 <thead>
                     <tr>
                         <th>Name</th>
