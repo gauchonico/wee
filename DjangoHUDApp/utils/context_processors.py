@@ -139,6 +139,11 @@ def sidebar_menu(request):
 		'icon': 'bi bi-gear',
 		'text': 'All Agents',
 		'name': 'agent-list'
+	},{
+		'url': '/agents/global-incentive/',
+		'icon': 'bi bi-gear',
+		'text': 'Global Incentive',
+		'name': 'agents:global-incentive'
 	}]
 	
 	resolved_path = resolve(request.path_info)

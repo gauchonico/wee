@@ -1,6 +1,7 @@
 {% extends 'base.html' %}
 
 {% load static %}
+{% load humanize %}
 
 {% block page_title %}{{ agent.first_name }} {{ agent.last_name }}{% endblock %}
 
@@ -22,7 +23,7 @@
 
 <div class="row">
     <div class="col-md-6">
-        <div class="card mb-4">
+        <div class="card border-0 shadow mb-4">
             <div class="card-header">
                 <h5 class="card-title mb-0">Personal Information</h5>
             </div>
@@ -87,7 +88,7 @@
         </div>
     </div>
     <div class="col-md-6">
-        <div class="card mb-4">
+        <div class="card border-0 shadow mb-4">
             <div class="card-header">
                 <h5 class="card-title mb-0">Assigned Districts</h5>
             </div>
@@ -116,12 +117,23 @@
                     <i class="bi bi-info-circle"></i> No districts assigned to this agent.
                 </div>
                 {% endif %}
+                
+                    <p>Price per Profile: UGX {{ current_incentive.price_per_farmer|floatformat:0|intcomma }}</p>
+                    <p><strong>Start Date:</strong> {{ current_incentive.start_date }}</p>
+                    {% if current_incentive.end_date %}
+                    <p><strong>End Date:</strong> {{ current_incentive.end_date }}</p>
+                    {% endif %}
+                    <p><strong>Comission Earned:</strong> {{ total_incentive|floatformat:0|intcomma }}</p>
+                    {% comment %} <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#incentiveModal">
+                        Update Incentive Rate
+                    </button> {% endcomment %}
+                
             </div>
         </div>
     </div>
 </div>
 
-<div class="card">
+<div class="card border-0 shadow">
     <div class="card-header">
         <h5 class="card-title mb-0">Assigned Farmer Groups</h5>
     </div>
@@ -160,4 +172,36 @@
         {% endif %}
     </div>
 </div>
+
+
+<!-- Incentive Modal -->
+<div class="modal fade" id="incentiveModal" tabindex="-1" aria-labelledby="incentiveModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="incentiveModalLabel">Set Incentive Rate</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form method="post">
+                {% csrf_token %}
+                <div class="modal-body">
+                    {{ incentive_form.as_p }}
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="submit" class="btn btn-primary">Save changes</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Initialize date pickers
+    document.addEventListener('DOMContentLoaded', function() {
+        // Add any JavaScript initialization here if needed
+    });
+</script>
 {% endblock %} 

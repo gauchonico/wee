@@ -37,6 +37,7 @@ CSRF_TRUSTED_ORIGINS = ['https://wee.mylivara.com']
 INSTALLED_APPS = [
     'DjangoHUDApp.apps.DjangohudappConfig',
     'cooperatives.apps.CooperativesConfig',
+    'django.contrib.humanize',
     'agents.apps.AgentsConfig',
     'django.contrib.admin',
     'django.contrib.auth',

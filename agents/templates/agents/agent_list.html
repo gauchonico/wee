@@ -36,21 +36,131 @@
             <i class="bi bi-cloud-upload"></i> Bulk Upload
         </a>
         <a href="{% url 'agents:agent-create' %}" class="btn bg-teal-800 text-white btn-sm">
-            <i class="bi bi-plus-circle"></i> Add New Agent
+            <i class="bi bi-plus-circle"></i> Agent
         </a>
+        <a href="{% url 'agents:update-member-counts' %}" class="btn bg-teal-800 text-white btn-sm">
+            <i class="bi bi-plus-circle"></i> M/C
+        </a>
+    </div>
+</div>
+
+<!-- Statistics Cards -->
+<div class="row mb-4">
+    <!-- Total Agents Card -->
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card border-0 shadow h-100 py-2">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-uppercase mb-1">Total Agents</div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="bi bi-people fa-2x text-theme"></i>
+                    </div>
+                </div>
+                <div class="flex-1">
+                    <div class="h5 mb-2 font-weight-bold">{{ total_agents }}</div>
+                    <div class="progress h-3px bg-secondary-transparent-2 mb-1">
+                        <div class="progress-bar bg-theme" style="width: 100%"></div>
+                    </div>
+                    <div class="fs-11px text-inverse text-opacity-50 mb-2 text-truncate">
+                        {{ active_agents }} Active
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Incomplete Profiles Card -->
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card border-0 shadow h-100 py-2">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-uppercase mb-1">Need Profile Update</div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="bi bi-exclamation-triangle fa-2x text-warning"></i>
+                    </div>
+                </div>
+                <div class="flex-1">
+                    <div class="h5 mb-2 font-weight-bold">{{ incomplete_profiles }}</div>
+                    <div class="progress h-3px bg-secondary-transparent-2 mb-1">
+                        <div class="progress-bar bg-warning" style="width: {% widthratio incomplete_profiles total_agents 100 %}%"></div>
+                    </div>
+                    <div class="fs-11px text-inverse text-opacity-50 mb-2 text-truncate">
+                        Missing Information
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Best Agent Card -->
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card border-0 shadow h-100 py-2">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-uppercase mb-1">Best Performer</div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="bi bi-trophy fa-2x text-success"></i>
+                    </div>
+                </div>
+                <div class="flex-1">
+                    {% if best_agent %}
+                    <div class="h5 mb-2 font-weight-bold">{{ best_agent.first_name }} {{ best_agent.last_name }}</div>
+                    <div class="progress h-3px bg-secondary-transparent-2 mb-1">
+                        <div class="progress-bar bg-success" style="width: 100%"></div>
+                    </div>
+                    <div class="fs-11px text-inverse text-opacity-50 mb-2 text-truncate">
+                        {{ best_agent.farmers_profiled }} Farmers Profiled
+                    </div>
+                    {% else %}
+                    <div class="text-muted">No data available</div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Gender Distribution Card -->
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card border-0 shadow h-100 py-2">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-uppercase mb-1">Gender Distribution</div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="bi bi-gender-ambiguous fa-2x text-info"></i>
+                    </div>
+                </div>
+                <div class="flex-1">
+                    <div class="h5 mb-2 font-weight-bold">{{ male_agents }} / {{ female_agents }}</div>
+                    <div class="progress h-3px bg-secondary-transparent-2 mb-1">
+                        <div class="progress-bar bg-info" style="width: {% widthratio male_agents total_agents 100 %}%"></div>
+                    </div>
+                    <div class="fs-11px text-inverse text-opacity-50 mb-2 text-truncate">
+                        Male / Female Agents
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 </div>
 
 <div class="card border">
     <div class="card-body">
-        {% comment %} <form method="get" class="mb-3">
+        <form method="get" class="mb-3">
             <div class="input-group">
                 <input type="text" name="search" class="form-control" placeholder="Search agents..." value="{{ search_query }}">
                 <button type="submit" class="btn btn-primary">
                     <i class="bi bi-search"></i> Search
                 </button>
             </div>
-        </form> {% endcomment %}
+        </form>
 
         {% if agents %}
         <div class="table-responsive">
@@ -61,7 +171,8 @@
                         <th>Name</th>
                         <th>Email</th>
                         <th>Phone</th>
-                        
+                        <th>Gender</th>
+                        <th>Districts</th>
                         <th>Status</th>
                         <th>Farmers Profiled</th>
                         <th>Actions</th>
@@ -73,10 +184,14 @@
                     <tr>
                         <td>{{ agent.agent_id }}</td>
                         <td>{{ agent.first_name }} {{ agent.last_name }}</td>
-                        <td>{{ agent.email }}</td>
-                        <td>{{ agent.phone_number }}</td>
-                        
-                        
+                        <td>{{ agent.email|default:"-" }}</td>
+                        <td>{{ agent.phone_number|default:"-" }}</td>
+                        <td>{{ agent.get_gender_display }}</td>
+                        <td>
+                            {% for district in agent.districts.all %}
+                                {{ district.name }}{% if not forloop.last %}, {% endif %}
+                            {% endfor %}
+                        </td>
                         <td>
                             {% if agent.is_active %}
                             <span class="badge bg-success">Active</span>
@@ -98,7 +213,7 @@
                                 </a>
                             </div>
                         </td>
-                        <td>{{ agent.date_joined|date:"Y-m-d" }}</td>
+                        <td>{{ agent.date_joined|date:"Y-m-d"|default:"-" }}</td>
                     </tr>
                     {% endfor %}
                 </tbody>

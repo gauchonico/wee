@@ -1,5 +1,5 @@
 from django import forms
-from .models import Agent
+from .models import Agent, Incentive
 from cooperatives.models import District
 
 class AgentForm(forms.ModelForm):
@@ -41,8 +41,43 @@ class AgentForm(forms.ModelForm):
             raise forms.ValidationError("This email is already in use.")
         return email
 
+    def save(self, commit=True):
+        agent = super().save(commit=False)
+        if commit:
+            agent.save()
+            self.save_m2m()
+            # Create user account if it doesn't exist
+            if not agent.user:
+                agent.create_user_account()
+        return agent
+
 class AgentBulkUploadForm(forms.Form):
     csv_file = forms.FileField(
         label='CSV File',
         help_text='Upload a CSV file with the following columns: agent_id, first_name, last_name, email, phone_number, gender, date_of_birth, districts, farmers_profiled. Districts should be comma-separated if multiple (e.g. "agago, pader").'
-    ) 
+    )
+
+class MemberAgentRelationshipForm(forms.Form):
+    csv_file = forms.FileField(
+        label='CSV File',
+        help_text='Upload a CSV file with the following columns: member_id, agent_name. The agent_name should be in the format "Firstname Lastname".'
+    )
+
+class IncentiveForm(forms.ModelForm):
+    class Meta:
+        model = Incentive
+        fields = ['price_per_farmer', 'start_date', 'end_date', 'is_active']
+        widgets = {
+            'start_date': forms.DateInput(attrs={'type': 'date'}),
+            'end_date': forms.DateInput(attrs={'type': 'date'}),
+        }
+
+    def clean(self):
+        cleaned_data = super().clean()
+        start_date = cleaned_data.get('start_date')
+        end_date = cleaned_data.get('end_date')
+
+        if end_date and start_date and end_date < start_date:
+            raise forms.ValidationError("End date cannot be before start date.")
+        
+        return cleaned_data 

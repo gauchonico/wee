@@ -1,0 +1,106 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Global Incentive Settings{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-8">
+            <h2>Global Incentive Settings</h2>
+            
+            {% if current_incentive %}
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Current Global Incentive Rate</h5>
+                </div>
+                <div class="card-body">
+                    <p><strong>Price per Farmer:</strong> {{ current_incentive.price_per_farmer }}</p>
+                    <p><strong>Start Date:</strong> {{ current_incentive.start_date }}</p>
+                    {% if current_incentive.end_date %}
+                    <p><strong>End Date:</strong> {{ current_incentive.end_date }}</p>
+                    {% endif %}
+                    <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#incentiveModal">
+                        Update Incentive Rate
+                    </button>
+                </div>
+            </div>
+            {% else %}
+            <div class="alert alert-info">
+                No active incentive rate set. 
+                <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#incentiveModal">
+                    Set Incentive Rate
+                </button>
+            </div>
+            {% endif %}
+
+            <h3>Incentive History</h3>
+            <div class="table-responsive">
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>Price per Farmer</th>
+                            <th>Start Date</th>
+                            <th>End Date</th>
+                            <th>Status</th>
+                            <th>Created At</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for incentive in incentives %}
+                        <tr>
+                            <td>{{ incentive.price_per_farmer }}</td>
+                            <td>{{ incentive.start_date }}</td>
+                            <td>{{ incentive.end_date|default:"-" }}</td>
+                            <td>
+                                {% if incentive.is_active %}
+                                <span class="badge bg-success">Active</span>
+                                {% else %}
+                                <span class="badge bg-secondary">Inactive</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ incentive.created_at }}</td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="5" class="text-center">No incentive history found</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Incentive Modal -->
+    <div class="modal fade" id="incentiveModal" tabindex="-1" aria-labelledby="incentiveModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="incentiveModalLabel">Set Global Incentive Rate</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <form method="post">
+                    {% csrf_token %}
+                    <div class="modal-body">
+                        {{ incentive_form.as_p }}
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                        <button type="submit" class="btn btn-primary">Save changes</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Initialize date pickers
+    document.addEventListener('DOMContentLoaded', function() {
+        // Add any JavaScript initialization here if needed
+    });
+</script>
+{% endblock %} 

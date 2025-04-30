@@ -10,4 +10,6 @@ urlpatterns = [
     path('<int:pk>/update/', views.AgentUpdateView.as_view(), name='agent-update'),
     path('<int:pk>/delete/', views.AgentDeleteView.as_view(), name='agent-delete'),
     path('bulk-upload/', views.AgentBulkUploadView.as_view(), name='agent-bulk-upload'),
+    path('update-member-counts/', views.MemberAgentRelationshipView.as_view(), name='update-member-counts'),
+    path('global-incentive/', views.GlobalIncentiveView.as_view(), name='global-incentive'),
 ] 
