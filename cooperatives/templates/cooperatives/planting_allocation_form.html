@@ -1,123 +1,135 @@
 {% extends 'base.html' %}
 
-{% block page_title %}
-    {% if form.instance.pk %}Edit{% else %}New{% endif %} Planting Allocation - {{ member }}
+{% block title %}
+    {% if planting_allocation.pk %}Edit{% else %}Create{% endif %} Planting Allocation
 {% endblock %}
 
 {% block content %}
-<div class="container-fluid">
-    <div class="row">
+<div class="container">
+    <div class="row mb-4">
         <div class="col-12">
-            <div class="card">
-                <div class="card-header">
-                    <h3 class="card-title">
-                        {% if form.instance.pk %}Edit{% else %}New{% endif %} Planting Allocation
-                    </h3>
-                    <div class="card-tools">
-                        <a href="{% url 'cooperatives:member-planting-list' member.pk %}" class="btn btn-secondary btn-sm">
-                            <i class="bi bi-arrow-left"></i> Back to List
-                        </a>
+            <h1 class="h3 mb-0">
+                {% if planting_allocation.pk %}Edit{% else %}Create{% endif %} Planting Allocation
+            </h1>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-body">
+            <form method="post">
+                {% csrf_token %}
+                
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label for="{{ form.product.id_for_label }}" class="form-label">Product</label>
+                        {{ form.product }}
+                        {% if form.product.errors %}
+                            <div class="invalid-feedback d-block">
+                                {{ form.product.errors }}
+                            </div>
+                        {% endif %}
+                    </div>
+
+                    <div class="col-md-6 mb-3">
+                        <label for="{{ form.allocated_acres.id_for_label }}" class="form-label">Allocated Acres</label>
+                        {{ form.allocated_acres }}
+                        {% if form.allocated_acres.errors %}
+                            <div class="invalid-feedback d-block">
+                                {{ form.allocated_acres.errors }}
+                            </div>
+                        {% endif %}
                     </div>
                 </div>
-                <div class="card-body">
-                    <form method="post">
-                        {% csrf_token %}
-                        <div class="row">
-                            <div class="col-md-6">
-                                <div class="form-group">
-                                    <label for="{{ form.product.id_for_label }}">Product</label>
-                                    {{ form.product }}
-                                    {% if form.product.errors %}
-                                        <div class="invalid-feedback d-block">
-                                            {{ form.product.errors }}
-                                        </div>
-                                    {% endif %}
-                                    {% if member_products %}
-                                        <small class="form-text text-muted">
-                                            Member's products: {{ member_products|join:", " }}
-                                        </small>
-                                    {% else %}
-                                        <div class="alert alert-warning mt-2">
-                                            <i class="bi bi-exclamation-triangle"></i> No products assigned to this member. 
-                                            Please <a href="{% url 'cooperatives:member-update' member.pk %}" class="alert-link">update the member's profile</a> 
-                                            to assign products first.
-                                        </div>
-                                    {% endif %}
-                                </div>
+
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label for="{{ form.planting_date.id_for_label }}" class="form-label">Planting Date</label>
+                        {{ form.planting_date }}
+                        {% if form.planting_date.errors %}
+                            <div class="invalid-feedback d-block">
+                                {{ form.planting_date.errors }}
                             </div>
-                            <div class="col-md-6">
-                                <div class="form-group">
-                                    <label for="{{ form.allocated_acres.id_for_label }}">Allocated Acres</label>
-                                    {{ form.allocated_acres }}
-                                    {% if form.allocated_acres.errors %}
-                                        <div class="invalid-feedback d-block">
-                                            {{ form.allocated_acres.errors }}
-                                        </div>
-                                    {% endif %}
-                                </div>
+                        {% endif %}
+                    </div>
+
+                    <div class="col-md-6 mb-3">
+                        <label for="{{ form.expected_harvest_date.id_for_label }}" class="form-label">Expected Harvest Date</label>
+                        {{ form.expected_harvest_date }}
+                        {% if form.expected_harvest_date.errors %}
+                            <div class="invalid-feedback d-block">
+                                {{ form.expected_harvest_date.errors }}
                             </div>
-                        </div>
-                        <div class="row mt-3">
-                            <div class="col-md-4">
-                                <div class="form-group">
-                                    <label for="{{ form.planting_date.id_for_label }}">Planting Date</label>
-                                    {{ form.planting_date }}
-                                    {% if form.planting_date.errors %}
-                                        <div class="invalid-feedback d-block">
-                                            {{ form.planting_date.errors }}
-                                        </div>
-                                    {% endif %}
-                                </div>
-                            </div>
-                            <div class="col-md-4">
-                                <div class="form-group">
-                                    <label for="{{ form.expected_harvest_date.id_for_label }}">Expected Harvest Date</label>
-                                    {{ form.expected_harvest_date }}
-                                    {% if form.expected_harvest_date.errors %}
-                                        <div class="invalid-feedback d-block">
-                                            {{ form.expected_harvest_date.errors }}
-                                        </div>
-                                    {% endif %}
-                                </div>
-                            </div>
-                            <div class="col-md-4">
-                                <div class="form-group">
-                                    <label for="{{ form.status.id_for_label }}">Status</label>
-                                    {{ form.status }}
-                                    {% if form.status.errors %}
-                                        <div class="invalid-feedback d-block">
-                                            {{ form.status.errors }}
-                                        </div>
-                                    {% endif %}
-                                </div>
-                            </div>
-                        </div>
-                        <div class="row mt-3">
-                            <div class="col-12">
-                                <div class="form-group">
-                                    <label for="{{ form.notes.id_for_label }}">Notes</label>
-                                    {{ form.notes }}
-                                    {% if form.notes.errors %}
-                                        <div class="invalid-feedback d-block">
-                                            {{ form.notes.errors }}
-                                        </div>
-                                    {% endif %}
-                                </div>
-                            </div>
-                        </div>
-                        <div class="row mt-4">
-                            <div class="col-12">
-                                <button type="submit" class="btn btn-primary">
-                                    <i class="bi bi-save"></i> Save
-                                </button>
-                                <a href="{% url 'cooperatives:member-planting-list' member.pk %}" class="btn btn-secondary">
-                                    <i class="bi bi-x-circle"></i> Cancel
-                                </a>
-                            </div>
-                        </div>
-                    </form>
+                        {% endif %}
+                    </div>
                 </div>
-            </div>
+
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label for="{{ form.status.id_for_label }}" class="form-label">Status</label>
+                        {{ form.status }}
+                        {% if form.status.errors %}
+                            <div class="invalid-feedback d-block">
+                                {{ form.status.errors }}
+                            </div>
+                        {% endif %}
+                    </div>
+
+                    <div class="col-md-6 mb-3">
+                        <label for="{{ form.supplier.id_for_label }}" class="form-label">Supplier</label>
+                        {{ form.supplier }}
+                        {% if form.supplier.errors %}
+                            <div class="invalid-feedback d-block">
+                                {{ form.supplier.errors }}
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label for="{{ form.planting_quantity.id_for_label }}" class="form-label">Planting Quantity</label>
+                        {{ form.planting_quantity }}
+                        {% if form.planting_quantity.errors %}
+                            <div class="invalid-feedback d-block">
+                                {{ form.planting_quantity.errors }}
+                            </div>
+                        {% endif %}
+                        <div class="form-text">Number of seeds/seedlings or bee hives</div>
+                    </div>
+
+                    <div class="col-md-6 mb-3">
+                        <label for="{{ form.planting_quantity_unit.id_for_label }}" class="form-label">Unit</label>
+                        {{ form.planting_quantity_unit }}
+                        {% if form.planting_quantity_unit.errors %}
+                            <div class="invalid-feedback d-block">
+                                {{ form.planting_quantity_unit.errors }}
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <label for="{{ form.notes.id_for_label }}" class="form-label">Notes</label>
+                    {{ form.notes }}
+                    {% if form.notes.errors %}
+                        <div class="invalid-feedback d-block">
+                            {{ form.notes.errors }}
+                        </div>
+                    {% endif %}
+                </div>
+
+                <div class="alert alert-info">
+                    <h5 class="alert-heading">Note</h5>
+                    <p class="mb-0">
+                        For sunflower, this should be the number of seeds planted per acre.
+                        For honey, this should be the number of bee hives.
+                        For other crops, this should be the number of seedlings planted.
+                    </p>
+                </div>
+
+                <button type="submit" class="btn btn-primary">Save</button>
+                <a href="{% url 'cooperatives:member-planting-list' member.pk %}" class="btn btn-secondary">Cancel</a>
+            </form>
         </div>
     </div>
 </div>

@@ -11,7 +11,7 @@
                     <h3 class="card-title">Planting Allocations</h3>
                     <div>
                         <a href="{% url 'cooperatives:member-collection-list' member.pk %}" class="btn btn-info btn-sm">
-                            <i class="bi bi-basket"></i> View Collections
+                            <i class="bi bi-basket"></i> View All Collections
                         </a>
                         <a href="{% url 'cooperatives:member-planting-create' member.pk %}" class="btn btn-primary btn-sm">
                             <i class="bi bi-plus-circle"></i> Add New Allocation
@@ -33,6 +33,7 @@
                                     <th>Expected Harvest</th>
                                     <th>Actual Harvest</th>
                                     <th>Status</th>
+                                    <th>Collections</th>
                                     <th>Actions</th>
                                 </tr>
                             </thead>
@@ -48,6 +49,18 @@
                                         <span class="badge bg-{{ allocation.status }}">
                                             {{ allocation.get_status_display }}
                                         </span>
+                                    </td>
+                                    <td>
+                                        {% if allocation.status == 'harvested' %}
+                                        <a href="{% url 'cooperatives:member-collection-create' member.pk %}?planting={{ allocation.pk }}" class="btn btn-sm btn-success">
+                                            <i class="bi bi-plus-circle"></i> Add Collection
+                                        </a>
+                                        <a href="{% url 'cooperatives:member-collection-list' member.pk %}?planting={{ allocation.pk }}" class="btn btn-sm btn-info">
+                                            <i class="bi bi-eye"></i> View ({{ allocation.collections.count }})
+                                        </a>
+                                        {% else %}
+                                        <span class="text-muted">Not harvested yet</span>
+                                        {% endif %}
                                     </td>
                                     <td>
                                         <a href="{% url 'cooperatives:member-planting-update' allocation.pk %}" class="btn btn-sm btn-warning">

@@ -14,13 +14,13 @@ from .forms import (
     CooperativeForm, FarmerGroupForm, MemberForm, ProductForm, PriceForm, UnitForm, CooperativeBulkUploadForm,
     ParishBulkUploadForm, VillageBulkUploadForm, SubCountyBulkUploadForm, CountyBulkUploadForm, DistrictBulkUploadForm,
     FarmerGroupBulkUploadForm, MemberBulkUploadForm, SunflowerAcreageBulkUploadForm, SupplierForm, SupplierProductBulkUploadForm,
-    PlantingAllocationForm, CollectionForm
+    PlantingAllocationForm, CollectionForm, CollectionBulkUploadForm
 )
 from .mixins import CustomLoginRequiredMixin
 import csv
 import io
 from datetime import datetime
-from django.db.models import Q, Count, Sum
+from django.db.models import Q, Count, Sum, F
 from django.views.generic.edit import FormView
 import random
 import json
@@ -28,6 +28,11 @@ from django.contrib import messages  # For error_messages
 import io  # For StringIO
 import csv  # For csv.DictReader
 import time
+from django.core.cache import cache
+from django.utils.decorators import method_decorator
+from django.views.decorators.cache import cache_page
+from django.utils import timezone
+from datetime import timedelta
 
 # District Views
 class DistrictListView(CustomLoginRequiredMixin, ListView):
@@ -1933,13 +1938,21 @@ class MemberPlantingAllocationUpdateView(CustomLoginRequiredMixin, UpdateView):
     model = PlantingAllocation
     form_class = PlantingAllocationForm
     template_name = 'cooperatives/planting_allocation_form.html'
-    
+    context_object_name = 'planting_allocation'
+
     def get_success_url(self):
         return reverse('cooperatives:member-planting-list', kwargs={'member_pk': self.object.member.pk})
-    
-    def form_valid(self, form):
-        messages.success(self.request, 'Planting allocation updated successfully.')
-        return super().form_valid(form)
+
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs['member'] = self.object.member
+        return kwargs
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['title'] = 'Edit Planting Allocation'
+        context['member'] = self.object.member
+        return context
 
 class MemberCollectionListView(CustomLoginRequiredMixin, ListView):
     model = Collection
@@ -1948,11 +1961,30 @@ class MemberCollectionListView(CustomLoginRequiredMixin, ListView):
     
     def get_queryset(self):
         member = get_object_or_404(Member, pk=self.kwargs['member_pk'])
-        return Collection.objects.filter(member=member).select_related('product', 'unit')
+        queryset = Collection.objects.filter(member=member).select_related('product', 'unit', 'planting_allocation')
+        
+        # Filter by planting allocation if specified
+        planting_id = self.request.GET.get('planting')
+        if planting_id:
+            planting_allocation = get_object_or_404(PlantingAllocation, pk=planting_id, member=member)
+            queryset = queryset.filter(planting_allocation=planting_allocation)
+            self.planting_allocation = planting_allocation
+        else:
+            self.planting_allocation = None
+            
+        return queryset
     
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['member'] = get_object_or_404(Member, pk=self.kwargs['member_pk'])
+        context['planting_allocation'] = self.planting_allocation
+        
+        # Calculate total collections
+        total_quantity = self.get_queryset().aggregate(total=Sum('quantity'))['total'] or 0
+        total_value = self.get_queryset().aggregate(total=Sum('total_price'))['total'] or 0
+        context['total_quantity'] = total_quantity
+        context['total_value'] = total_value
+        
         return context
 
 class MemberCollectionCreateView(CustomLoginRequiredMixin, CreateView):
@@ -1965,8 +1997,21 @@ class MemberCollectionCreateView(CustomLoginRequiredMixin, CreateView):
     
     def get_form_kwargs(self):
         kwargs = super().get_form_kwargs()
-        kwargs['member'] = get_object_or_404(Member, pk=self.kwargs['member_pk'])
+        member = get_object_or_404(Member, pk=self.kwargs['member_pk'])
+        kwargs['member'] = member
+        
+        # Get planting allocation from query parameter if provided
+        planting_id = self.request.GET.get('planting')
+        if planting_id:
+            planting_allocation = get_object_or_404(PlantingAllocation, pk=planting_id, member=member)
+            kwargs['planting_allocation'] = planting_allocation
+        
         return kwargs
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['member'] = get_object_or_404(Member, pk=self.kwargs['member_pk'])
+        return context
     
     def form_valid(self, form):
         form.instance.created_by = self.request.user
@@ -1980,6 +2025,13 @@ class MemberCollectionUpdateView(CustomLoginRequiredMixin, UpdateView):
     
     def get_success_url(self):
         return reverse('cooperatives:member-collection-list', kwargs={'member_pk': self.object.member.pk})
+    
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs['member'] = self.object.member
+        if self.object.planting_allocation:
+            kwargs['planting_allocation'] = self.object.planting_allocation
+        return kwargs
     
     def form_valid(self, form):
         messages.success(self.request, 'Collection updated successfully.')
@@ -2215,3 +2267,234 @@ class PlantingAnalyticsView(TemplateView):
             context['sunflower_price'] = None
 
         return context
+
+class CollectionListView(CustomLoginRequiredMixin, ListView):
+    model = Collection
+    template_name = 'cooperatives/collection_list.html'
+    context_object_name = 'collections'
+    paginate_by = 50
+
+    @method_decorator(cache_page(60 * 15))  # Cache for 15 minutes
+    def dispatch(self, *args, **kwargs):
+        return super().dispatch(*args, **kwargs)
+
+    def get_queryset(self):
+        queryset = Collection.objects.select_related(
+            'member',
+            'product',
+            'unit',
+            'planting_allocation'
+        ).order_by('-collection_date')
+
+        # Apply filters
+        member_id = self.request.GET.get('member')
+        product_id = self.request.GET.get('product')
+        start_date = self.request.GET.get('start_date')
+        end_date = self.request.GET.get('end_date')
+
+        if member_id:
+            queryset = queryset.filter(member_id=member_id)
+        if product_id:
+            queryset = queryset.filter(product_id=product_id)
+        if start_date:
+            queryset = queryset.filter(collection_date__gte=start_date)
+        if end_date:
+            queryset = queryset.filter(collection_date__lte=end_date)
+
+        return queryset
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        
+        # Get filter parameters
+        member_id = self.request.GET.get('member')
+        product_id = self.request.GET.get('product')
+        start_date = self.request.GET.get('start_date')
+        end_date = self.request.GET.get('end_date')
+
+        # Create cache key based on filters
+        cache_key = f'collection_stats_{member_id}_{product_id}_{start_date}_{end_date}'
+        cached_stats = cache.get(cache_key)
+
+        if cached_stats:
+            context.update(cached_stats)
+        else:
+            # Get base queryset for stats
+            stats_queryset = Collection.objects.all()
+            
+            # Apply same filters as main queryset
+            if member_id:
+                stats_queryset = stats_queryset.filter(member_id=member_id)
+            if product_id:
+                stats_queryset = stats_queryset.filter(product_id=product_id)
+            if start_date:
+                stats_queryset = stats_queryset.filter(collection_date__gte=start_date)
+            if end_date:
+                stats_queryset = stats_queryset.filter(collection_date__lte=end_date)
+
+            # Calculate total statistics
+            total_stats = stats_queryset.aggregate(
+                total_collections=Count('id'),
+                total_quantity=Sum('quantity'),
+                total_value=Sum('total_price')
+            )
+
+            # Get product statistics
+            product_stats = stats_queryset.values('product__name').annotate(
+                count=Count('id'),
+                total_quantity=Sum('quantity'),
+                total_value=Sum('total_price')
+            ).order_by('-total_value')[:10]  # Limit to top 10 products
+
+            # Get member statistics
+            member_stats = stats_queryset.values(
+                'member__first_name',
+                'member__surname'
+            ).annotate(
+                count=Count('id'),
+                total_quantity=Sum('quantity'),
+                total_value=Sum('total_price')
+            ).order_by('-total_value')[:10]  # Limit to top 10 members
+
+            # Get members and products for filters
+            members = Member.objects.all().order_by('first_name', 'surname')
+            products = Product.objects.all().order_by('name')
+
+            # Prepare context data
+            stats_data = {
+                'total_collections': total_stats['total_collections'] or 0,
+                'total_quantity': total_stats['total_quantity'] or 0,
+                'total_value': total_stats['total_value'] or 0,
+                'product_stats': product_stats,
+                'member_stats': member_stats,
+                'members': members,
+                'products': products,
+            }
+
+            # Cache the results for 15 minutes
+            cache.set(cache_key, stats_data, 60 * 15)
+            
+            context.update(stats_data)
+
+        return context
+
+class CollectionBulkUploadView(CustomLoginRequiredMixin, FormView):
+    template_name = 'cooperatives/collection_bulk_upload.html'
+    form_class = CollectionBulkUploadForm
+    success_url = reverse_lazy('cooperatives:collection_list')
+
+    def form_valid(self, form):
+        csv_file = form.cleaned_data['csv_file']
+        decoded_file = csv_file.read().decode('utf-8')
+        io_string = io.StringIO(decoded_file)
+        csv_data = csv.DictReader(io_string)
+        
+        success_count = 0
+        error_count = 0
+        error_messages = []
+        created_allocations = []
+
+        # Get all members and their planting allocations in advance
+        members = {m.member_id: m for m in Member.objects.all()}
+        planting_allocations = {
+            (pa.member_id, pa.product_id): pa 
+            for pa in PlantingAllocation.objects.select_related('product').all()
+        }
+
+        # Get all products and units in advance
+        products = {p.name.lower(): p for p in Product.objects.all()}
+        units = {u.name.lower(): u for u in Unit.objects.all()}
+
+        for row in csv_data:
+            try:
+                # Validate required fields
+                member_id = row.get('member_id')
+                if not member_id:
+                    raise ValueError("Member ID is required")
+                
+                # Get member
+                member = members.get(member_id)
+                if not member:
+                    raise ValueError(f"Member with ID {member_id} not found")
+
+                # Get product
+                product_name = row.get('product', '').lower()
+                product = products.get(product_name)
+                if not product:
+                    raise ValueError(f"Product '{product_name}' not found")
+
+                # Get unit
+                unit_name = row.get('units', '').lower()
+                unit = units.get(unit_name)
+                if not unit:
+                    raise ValueError(f"Unit '{unit_name}' not found")
+
+                # Parse quantities and prices
+                try:
+                    quantity = float(row.get('quantity', 0))
+                    unit_price = float(row.get('unit_price', 0))
+                    total_price = float(row.get('total_price', 0))
+                except ValueError:
+                    raise ValueError("Invalid numeric value in quantity or price")
+
+                # Parse collection date
+                try:
+                    collection_date = datetime.strptime(row['collection_date'], '%Y-%m-%d').date()
+                except ValueError:
+                    raise ValueError("Invalid date format. Use YYYY-MM-DD")
+
+                # Get or create planting allocation
+                planting_allocation = None
+                if product_name == 'sunflower':
+                    # Try to find existing sunflower planting allocation
+                    planting_allocation = planting_allocations.get((member.id, product.id))
+                    if not planting_allocation:
+                        raise ValueError(f"No sunflower planting allocation found for member {member_id}")
+                else:
+                    # For other products, create a new planting allocation based on land size
+                    planting_allocation = PlantingAllocation.objects.create(
+                        member=member,
+                        product=product,
+                        allocated_acres=member.land_acres * 0.2,  # Allocate 20% of land
+                        planting_date=collection_date - timedelta(days=90),  # Assume planted 90 days before collection
+                        expected_harvest_date=collection_date,
+                        status='planted',
+                        notes=f"Created automatically during collection upload"
+                    )
+                    created_allocations.append(planting_allocation)
+
+                # Create collection
+                Collection.objects.create(
+                    member=member,
+                    product=product,
+                    unit=unit,
+                    quantity=quantity,
+                    unit_price=unit_price,
+                    total_price=total_price,
+                    collection_date=collection_date,
+                    planting_allocation=planting_allocation,
+                    reference=row.get('collection_reference', ''),
+                    created_by=self.request.user
+                )
+                success_count += 1
+
+            except ValueError as e:
+                error_count += 1
+                error_messages.append(f"Row {csv_data.line_num}: {str(e)}")
+            except Exception as e:
+                error_count += 1
+                error_messages.append(f"Row {csv_data.line_num}: Unexpected error - {str(e)}")
+
+        # Add messages for user feedback
+        if success_count > 0:
+            messages.success(self.request, f"Successfully imported {success_count} collections")
+            if created_allocations:
+                messages.info(self.request, f"Created {len(created_allocations)} new planting allocations for non-sunflower products")
+        if error_count > 0:
+            messages.warning(self.request, f"Failed to import {error_count} collections")
+            for error in error_messages[:5]:  # Show first 5 errors
+                messages.error(self.request, error)
+            if len(error_messages) > 5:
+                messages.warning(self.request, f"... and {len(error_messages) - 5} more errors")
+
+        return super().form_valid(form)

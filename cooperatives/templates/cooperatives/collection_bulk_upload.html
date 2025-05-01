@@ -1,0 +1,51 @@
+{% extends 'base.html' %}
+
+{% block title %}Bulk Upload Collections{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row mb-4">
+        <div class="col-12">
+            <h1 class="h3 mb-0">Bulk Upload Collections</h1>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-body">
+            <form method="post" enctype="multipart/form-data">
+                {% csrf_token %}
+                
+                <div class="mb-3">
+                    <label for="{{ form.csv_file.id_for_label }}" class="form-label">CSV File</label>
+                    {{ form.csv_file }}
+                    {% if form.csv_file.errors %}
+                        <div class="invalid-feedback d-block">
+                            {{ form.csv_file.errors }}
+                        </div>
+                    {% endif %}
+                    <div class="form-text">{{ form.csv_file.help_text }}</div>
+                </div>
+
+                <div class="alert alert-info">
+                    <h5 class="alert-heading">CSV Format Requirements</h5>
+                    <p>Your CSV file should include the following columns:</p>
+                    <ul>
+                        <li><strong>member_id</strong> - The member's ID</li>
+                        <li><strong>product</strong> - The product name (e.g., "Sunflower", "Maize")</li>
+                        <li><strong>quantity</strong> - The quantity collected</li>
+                        <li><strong>units</strong> - The unit of measurement</li>
+                        <li><strong>unit_price</strong> - Price per unit (optional)</li>
+                        <li><strong>total_price</strong> - Total price for the collection</li>
+                        <li><strong>collection_date</strong> - Date in YYYY-MM-DD format</li>
+                        <li><strong>collection_reference</strong> - Unique reference for the collection (optional)</li>
+                    </ul>
+                    <p class="mb-0">For sunflower collections, the system will automatically link to existing planting allocations. For other products, new planting allocations will be created based on the member's land size.</p>
+                </div>
+
+                <button type="submit" class="btn btn-primary">Upload Collections</button>
+                <a href="{% url 'cooperatives:collection_list' %}" class="btn btn-secondary">Cancel</a>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %} 

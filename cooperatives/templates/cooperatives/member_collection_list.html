@@ -1,0 +1,115 @@
+{% extends 'base.html' %}
+
+{% block page_title %}
+    Collections - {{ member }}
+    {% if planting_allocation %}
+    - {{ planting_allocation.product }} ({{ planting_allocation.allocated_acres }} acres)
+    {% endif %}
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">
+                        Collections
+                        {% if planting_allocation %}
+                        for {{ planting_allocation.product }}
+                        {% endif %}
+                    </h3>
+                    <div class="card-tools">
+                        <a href="{% url 'cooperatives:member-collection-create' member.pk %}{% if planting_allocation %}?planting={{ planting_allocation.pk }}{% endif %}" class="btn btn-primary btn-sm">
+                            <i class="bi bi-plus-circle"></i> Add Collection
+                        </a>
+                        <a href="{% url 'cooperatives:member-planting-list' member.pk %}" class="btn btn-secondary btn-sm">
+                            <i class="bi bi-arrow-left"></i> Back to Planting
+                        </a>
+                    </div>
+                </div>
+                <div class="card-body">
+                    {% if planting_allocation %}
+                    <div class="alert alert-info mb-3">
+                        <h5 class="alert-heading">Planting Allocation Details</h5>
+                        <p class="mb-0">
+                            <strong>Product:</strong> {{ planting_allocation.product }}<br>
+                            <strong>Allocated Acres:</strong> {{ planting_allocation.allocated_acres }}<br>
+                            <strong>Planting Date:</strong> {{ planting_allocation.planting_date|date:"d M Y" }}<br>
+                            <strong>Expected Harvest:</strong> {{ planting_allocation.expected_harvest_date|date:"d M Y" }}
+                        </p>
+                    </div>
+                    {% endif %}
+
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <div class="card bg-primary text-white">
+                                <div class="card-body">
+                                    <h5 class="card-title">Total Quantity</h5>
+                                    <p class="card-text display-4">{{ total_quantity|floatformat:2 }}</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="card bg-success text-white">
+                                <div class="card-body">
+                                    <h5 class="card-title">Total Value</h5>
+                                    <p class="card-text display-4">{{ total_value|floatformat:2 }}</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="table-responsive">
+                        <table class="table table-bordered table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Product</th>
+                                    <th>Quantity</th>
+                                    <th>Unit</th>
+                                    <th>Unit Price</th>
+                                    <th>Total Value</th>
+                                    <th>Quality Grade</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for collection in collections %}
+                                <tr>
+                                    <td>{{ collection.collection_date|date:"d M Y" }}</td>
+                                    <td>{{ collection.product }}</td>
+                                    <td>{{ collection.quantity }}</td>
+                                    <td>{{ collection.unit }}</td>
+                                    <td>{{ collection.unit_price }}</td>
+                                    <td>{{ collection.total_price }}</td>
+                                    <td>
+                                        <span class="badge bg-{{ collection.quality_grade|lower }}">
+                                            {{ collection.get_quality_grade_display }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <a href="{% url 'cooperatives:member-collection-update' collection.pk %}" class="btn btn-sm btn-warning">
+                                            <i class="bi bi-pencil"></i>
+                                        </a>
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="8" class="text-center">
+                                        No collections found.
+                                        <a href="{% url 'cooperatives:member-collection-create' member.pk %}{% if planting_allocation %}?planting={{ planting_allocation.pk }}{% endif %}" class="btn btn-primary btn-sm ml-2">
+                                            <i class="bi bi-plus-circle"></i> Add First Collection
+                                        </a>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

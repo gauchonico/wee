@@ -28,17 +28,17 @@ def sidebar_menu(request):
 		'name': 'planting-analytics'
 	}, {
 		'icon': 'bi bi-envelope',
-		'text': 'Email',
+		'text': 'Collections',
 		'children': [{
-			'url': '/email/inbox',
-			'action': 'Inbox',
-			'text': 'Inbox',
-			'name': 'emailInbox'
+			'url': '/cooperatives/collections/',
+			'action': 'Collections',
+			'text': 'Collections',
+			'name': 'collection_list'
 		}, {
-			'url': '/email/compose',
+			'url': '/cooperatives/collections/bulk-upload',
 			'action': 'Compose',
-			'text': 'Compose',
-			'name': 'emailCompose'
+			'text': 'Upload Collections',
+			'name': 'collection_bulk_upload'
 		}, {
 			'url': '/email/detail',
 			'action': 'Detail',
@@ -142,7 +142,7 @@ def sidebar_menu(request):
 	},{
 		'url': '/agents/global-incentive/',
 		'icon': 'bi bi-gear',
-		'text': 'Global Incentive',
+		'text': 'Commission',
 		'name': 'agents:global-incentive'
 	}]
 	

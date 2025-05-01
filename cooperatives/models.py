@@ -332,13 +332,15 @@ class PlantingAllocation(models.Model):
         default='planned'
     )
     notes = models.TextField(null=True, blank=True)
+    supplier = models.ForeignKey(Supplier, on_delete=models.SET_NULL, null=True, blank=True, related_name='planting_allocations')
+    planting_quantity = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True, help_text="Number of seeds/seedlings planted or number of bee hives")
+    planting_quantity_unit = models.ForeignKey(Unit, on_delete=models.SET_NULL, null=True, blank=True, related_name='planting_allocations')
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
         verbose_name = 'Planting Allocation'
         verbose_name_plural = 'Planting Allocations'
-        unique_together = ['member', 'product', 'planting_date']
         indexes = [
             models.Index(fields=['member', 'product']),
             models.Index(fields=['planting_date', 'expected_harvest_date']),
@@ -363,9 +365,15 @@ class PlantingAllocation(models.Model):
                     f"Total allocated acres ({total_allocated + self.allocated_acres}) exceeds member's total land ({self.member.land_acres} acres)"
                 )
 
+    def get_planting_quantity_display(self):
+        if self.planting_quantity_unit:
+            return f"{self.planting_quantity} {self.planting_quantity_unit.name}"
+        return str(self.planting_quantity) if self.planting_quantity else "-"
+
 class Collection(models.Model):
     member = models.ForeignKey(Member, on_delete=models.CASCADE, related_name='collections')
     product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='collections')
+    planting_allocation = models.ForeignKey(PlantingAllocation, on_delete=models.CASCADE, related_name='collections', null=True, blank=True)
     collection_date = models.DateField(help_text="Date when the product was collected")
     quantity = models.DecimalField(max_digits=10, decimal_places=2, help_text="Quantity of product collected")
     unit = models.ForeignKey(Unit, on_delete=models.PROTECT, related_name='collections')
@@ -392,6 +400,7 @@ class Collection(models.Model):
         indexes = [
             models.Index(fields=['member', 'product']),
             models.Index(fields=['collection_date']),
+            models.Index(fields=['planting_allocation']),
         ]
 
     def __str__(self):
@@ -415,5 +424,9 @@ class Collection(models.Model):
         # Validate that unit price is positive
         if self.unit_price and self.unit_price <= 0:
             raise ValidationError("Unit price must be greater than zero")
+        
+        # Validate that planting allocation matches the product
+        if self.planting_allocation and self.planting_allocation.product != self.product:
+            raise ValidationError("Planting allocation product does not match collection product")
 
 

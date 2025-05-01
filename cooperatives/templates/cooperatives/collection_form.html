@@ -1,0 +1,137 @@
+{% extends 'base.html' %}
+
+{% block page_title %}
+    {% if form.instance.pk %}Edit{% else %}New{% endif %} Collection - {{ member }}
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">
+                        {% if form.instance.pk %}Edit{% else %}New{% endif %} Collection
+                    </h3>
+                    <div class="card-tools">
+                        <a href="{% url 'cooperatives:member-collection-list' member.pk %}" class="btn btn-secondary btn-sm">
+                            <i class="bi bi-arrow-left"></i> Back to List
+                        </a>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <form method="post">
+                        {% csrf_token %}
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="{{ form.planting_allocation.id_for_label }}">Planting Allocation</label>
+                                    {{ form.planting_allocation }}
+                                    {% if form.planting_allocation.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {{ form.planting_allocation.errors }}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="{{ form.product.id_for_label }}">Product</label>
+                                    {{ form.product }}
+                                    {% if form.product.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {{ form.product.errors }}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row mt-3">
+                            <div class="col-md-4">
+                                <div class="form-group">
+                                    <label for="{{ form.collection_date.id_for_label }}">Collection Date</label>
+                                    {{ form.collection_date }}
+                                    {% if form.collection_date.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {{ form.collection_date.errors }}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="form-group">
+                                    <label for="{{ form.quantity.id_for_label }}">Quantity</label>
+                                    {{ form.quantity }}
+                                    {% if form.quantity.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {{ form.quantity.errors }}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="form-group">
+                                    <label for="{{ form.unit.id_for_label }}">Unit</label>
+                                    {{ form.unit }}
+                                    {% if form.unit.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {{ form.unit.errors }}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row mt-3">
+                            <div class="col-md-4">
+                                <div class="form-group">
+                                    <label for="{{ form.unit_price.id_for_label }}">Unit Price</label>
+                                    {{ form.unit_price }}
+                                    {% if form.unit_price.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {{ form.unit_price.errors }}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="form-group">
+                                    <label for="{{ form.quality_grade.id_for_label }}">Quality Grade</label>
+                                    {{ form.quality_grade }}
+                                    {% if form.quality_grade.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {{ form.quality_grade.errors }}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row mt-3">
+                            <div class="col-12">
+                                <div class="form-group">
+                                    <label for="{{ form.notes.id_for_label }}">Notes</label>
+                                    {{ form.notes }}
+                                    {% if form.notes.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {{ form.notes.errors }}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row mt-4">
+                            <div class="col-12">
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="bi bi-save"></i> Save
+                                </button>
+                                <a href="{% url 'cooperatives:member-collection-list' member.pk %}" class="btn btn-secondary">
+                                    <i class="bi bi-x-circle"></i> Cancel
+                                </a>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

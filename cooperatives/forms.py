@@ -3,6 +3,8 @@ from .models import (
     District, County, SubCounty, Parish, Village, PaymentMode,
     Cooperative, FarmerGroup, Member, Product, Price, Unit, Supplier, SupplierProduct, PlantingAllocation, Collection
 )
+from django.core.exceptions import ValidationError
+from django.db import models
 
 class DistrictForm(forms.ModelForm):
     class Meta:
@@ -328,7 +330,8 @@ class PlantingAllocationForm(forms.ModelForm):
         model = PlantingAllocation
         fields = [
             'product', 'allocated_acres', 'planting_date',
-            'expected_harvest_date', 'status', 'notes'
+            'expected_harvest_date', 'status', 'notes',
+            'supplier', 'planting_quantity', 'planting_quantity_unit'
         ]
         widgets = {
             'product': forms.Select(attrs={'class': 'form-control'}),
@@ -337,6 +340,7 @@ class PlantingAllocationForm(forms.ModelForm):
             'expected_harvest_date': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
             'status': forms.Select(attrs={'class': 'form-control'}),
             'notes': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
+            'planting_quantity': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
         }
 
     def __init__(self, *args, **kwargs):
@@ -346,15 +350,39 @@ class PlantingAllocationForm(forms.ModelForm):
             self.instance.member = member
             # Filter products to only those the member can plant
             self.fields['product'].queryset = member.products.all()
+        
+        self.fields['supplier'].queryset = Supplier.objects.filter(is_active=True)
+        self.fields['planting_quantity_unit'].queryset = Unit.objects.all()
+
+    def clean(self):
+        cleaned_data = super().clean()
+        allocated_acres = cleaned_data.get('allocated_acres')
+        member = self.instance.member if self.instance.pk else self.initial.get('member')
+
+        if allocated_acres and member:
+            # Calculate total allocated acres excluding current allocation
+            total_allocated = PlantingAllocation.objects.filter(
+                member=member
+            ).exclude(
+                pk=self.instance.pk if self.instance.pk else None
+            ).aggregate(
+                total=models.Sum('allocated_acres')
+            )['total'] or 0
+
+            if total_allocated + allocated_acres > member.land_acres:
+                raise ValidationError(
+                    f"Total allocated acres ({total_allocated + allocated_acres}) exceeds member's total land ({member.land_acres} acres)"
+                )
 
 class CollectionForm(forms.ModelForm):
     class Meta:
         model = Collection
         fields = [
-            'product', 'collection_date', 'quantity',
+            'planting_allocation', 'product', 'collection_date', 'quantity',
             'unit', 'unit_price', 'quality_grade', 'notes'
         ]
         widgets = {
+            'planting_allocation': forms.Select(attrs={'class': 'form-control'}),
             'product': forms.Select(attrs={'class': 'form-control'}),
             'collection_date': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
             'quantity': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
@@ -366,11 +394,37 @@ class CollectionForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         member = kwargs.pop('member', None)
+        planting_allocation = kwargs.pop('planting_allocation', None)
         super().__init__(*args, **kwargs)
+        
         if member:
             self.instance.member = member
-            # Filter products to only those the member has planted
-            self.fields['product'].queryset = Product.objects.filter(
-                planting_allocations__member=member,
-                planting_allocations__status='harvested'
-            ).distinct() 
+            
+            # Show all planting allocations for the member
+            self.fields['planting_allocation'].queryset = PlantingAllocation.objects.filter(
+                member=member
+            ).select_related('product')
+            
+            # If a specific planting allocation is provided, set it and filter products
+            if planting_allocation:
+                self.fields['planting_allocation'].initial = planting_allocation
+                self.fields['product'].queryset = Product.objects.filter(pk=planting_allocation.product.pk)
+                self.fields['product'].initial = planting_allocation.product
+                self.fields['product'].widget.attrs['readonly'] = True
+            else:
+                # Filter products to only those the member has planting allocations for
+                self.fields['product'].queryset = Product.objects.filter(
+                    planting_allocations__member=member
+                ).distinct()
+
+class CollectionBulkUploadForm(forms.Form):
+    csv_file = forms.FileField(
+        label='CSV File',
+        help_text='Upload a CSV file with collections data. Required columns: member_id, product, quantity, units, unit_price, total_price, collection_date'
+    )
+
+    def clean_csv_file(self):
+        csv_file = self.cleaned_data['csv_file']
+        if not csv_file.name.endswith('.csv'):
+            raise forms.ValidationError('Please upload a CSV file')
+        return csv_file 

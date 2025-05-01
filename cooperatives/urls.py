@@ -129,4 +129,7 @@ urlpatterns = [
     path('supplier-products/bulk-upload/', views.SupplierProductBulkUploadView.as_view(), name='supplier_product_bulk_upload'),
 
     path('planting-analytics/', views.PlantingAnalyticsView.as_view(), name='planting-analytics'),
+
+    path('collections/', views.CollectionListView.as_view(), name='collection_list'),
+    path('collections/bulk-upload/', views.CollectionBulkUploadView.as_view(), name='collection_bulk_upload'),
 ] 
