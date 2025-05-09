@@ -7,7 +7,7 @@
 <div class="container-fluid">
     <div class="row mb-4">
         <div class="col-12">
-            <h1 class="h3 mb-0">Collections Dashboard</h1>
+            <h1 class="h3 mb-0">Collections Dashboards</h1>
         </div>
     </div>
 
@@ -16,15 +16,8 @@
         <div class="card-body">
             <form method="get" class="row g-3">
                 <div class="col-md-3">
-                    <label for="member" class="form-label">Member</label>
-                    <select name="member" id="member" class="form-select">
-                        <option value="">All Members</option>
-                        {% for member in members %}
-                        <option value="{{ member.id }}" {% if request.GET.member == member.id|stringformat:"i" %}selected{% endif %}>
-                            {{ member.first_name }} {{ member.surname }} ({{ member.member_id }})
-                        </option>
-                        {% endfor %}
-                    </select>
+                    <label for="search" class="form-label">Search Member (Name or ID)</label>
+                    <input type="text" class="form-control" id="search" name="search" placeholder="Type name or member ID..." value="{{ search_query }}">
                 </div>
                 <div class="col-md-3">
                     <label for="product" class="form-label">Product</label>
@@ -56,7 +49,7 @@
     <!-- Summary Statistics -->
     <div class="row mb-4">
         <div class="col-md-4">
-            <div class="card h-100">
+            <div class="card border-0 shadow h-100">
                 <div class="card-body">
                     <h5 class="card-title text-muted mb-2">Total Collections</h5>
                     <p class="card-text display-4">{{ total_collections|intcomma }}</p>
@@ -65,7 +58,7 @@
             </div>
         </div>
         <div class="col-md-4">
-            <div class="card h-100">
+            <div class="card border-0 shadow h-100">
                 <div class="card-body">
                     <h5 class="card-title text-muted mb-2">Total Quantity</h5>
                     <p class="card-text display-4">{{ total_quantity|intcomma }}</p>
@@ -74,10 +67,10 @@
             </div>
         </div>
         <div class="col-md-4">
-            <div class="card h-100">
+            <div class="card border-0 shadow h-100">
                 <div class="card-body">
                     <h5 class="card-title text-muted mb-2">Total Value</h5>
-                    <p class="card-text display-4">UGX {{ total_value|intcomma }}</p>
+                    <p class="card-text fs-15px">UGX {{ total_value|intcomma }}</p>
                     <p class="text-muted mb-0">Total value of collections</p>
                 </div>
             </div>
@@ -87,7 +80,7 @@
     <!-- Product Statistics -->
     <div class="row mb-4">
         <div class="col-md-6">
-            <div class="card h-100">
+            <div class="card border-0 shadow h-100">
                 <div class="card-header">
                     <h5 class="card-title mb-0">Collections by Product</h5>
                 </div>
@@ -118,7 +111,7 @@
             </div>
         </div>
         <div class="col-md-6">
-            <div class="card h-100">
+            <div class="card border-0 shadow h-100">
                 <div class="card-header">
                     <h5 class="card-title mb-0">Top Farmers</h5>
                 </div>
@@ -136,7 +129,11 @@
                             <tbody>
                                 {% for stat in member_stats %}
                                 <tr>
-                                    <td>{{ stat.member__first_name }} {{ stat.member__surname }}</td>
+                                    <td>
+                                        <a href="{% url 'cooperatives:member-collection-list' stat.member__id %}">
+                                            {{ stat.member__first_name }} {{ stat.member__surname }}
+                                        </a>
+                                    </td>
                                     <td class="text-end">{{ stat.count|intcomma }}</td>
                                     <td class="text-end">{{ stat.total_quantity|intcomma }}</td>
                                     <td class="text-end">UGX {{ stat.total_value|intcomma }}</td>
@@ -151,7 +148,7 @@
     </div>
 
     <!-- Recent Collections -->
-    <div class="card">
+    <div class="card border-0 shadow">
         <div class="card-header">
             <h5 class="card-title mb-0">Recent Collections</h5>
         </div>
@@ -166,17 +163,25 @@
                             <th class="text-end">Quantity</th>
                             <th class="text-end">Unit Price</th>
                             <th class="text-end">Total Price</th>
+                            <th>Actions</th>
                         </tr>
                     </thead>
                     <tbody>
                         {% for collection in collections %}
                         <tr>
                             <td>{{ collection.collection_date|date:"d M Y" }}</td>
-                            <td>{{ collection.member.first_name }} {{ collection.member.surname }}</td>
+                            <td>
+                                <a href="{% url 'cooperatives:member-detail' collection.member.pk %}">
+                                    {{ collection.member.first_name }} {{ collection.member.surname }}
+                                </a>
+                            </td>
                             <td>{{ collection.product.name }}</td>
                             <td class="text-end">{{ collection.quantity|intcomma }}</td>
                             <td class="text-end">UGX {{ collection.unit_price|intcomma }}</td>
                             <td class="text-end">UGX {{ collection.total_price|intcomma }}</td>
+                            <td>
+                                <a href="{% url 'cooperatives:collection-detail' collection.pk %}" class="btn btn-sm btn-outline-primary">View</a>
+                            </td>
                         </tr>
                         {% endfor %}
                     </tbody>

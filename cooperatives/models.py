@@ -256,6 +256,8 @@ class Member(models.Model):
     
     system_id = models.CharField(max_length=50, unique=True, null=True, blank=True, help_text="External system ID for the member")
     
+    collection_reference = models.CharField(max_length=255, unique=True, null=True, blank=True, help_text="Unique reference for the collection")
+    
     class Meta:
         verbose_name = 'Member'
         verbose_name_plural = 'Members'
@@ -395,6 +397,8 @@ class Collection(models.Model):
     created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name='created_collections')
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+
+    collection_reference = models.CharField(max_length=255, unique=True, null=True, blank=True, help_text="Unique reference for the collection")
 
     class Meta:
         verbose_name = 'Collection'

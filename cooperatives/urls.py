@@ -90,6 +90,7 @@ urlpatterns = [
     path('members/<int:member_pk>/collections/', views.MemberCollectionListView.as_view(), name='member-collection-list'),
     path('members/<int:member_pk>/collections/create/', views.MemberCollectionCreateView.as_view(), name='member-collection-create'),
     path('members/collections/<int:pk>/update/', views.MemberCollectionUpdateView.as_view(), name='member-collection-update'),
+    path('collections/<int:pk>/', views.CollectionDetailView.as_view(), name='collection-detail'),
     
     # Product URLs
     path('products/', views.ProductListView.as_view(), name='product-list'),

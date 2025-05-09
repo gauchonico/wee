@@ -1,0 +1,58 @@
+{% extends 'base.html' %}
+
+{% block page_title %}Collection Details{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">Collection Details</h5>
+            <a href="{% url 'cooperatives:collection_list' %}" class="btn btn-secondary btn-sm">
+                <i class="bi bi-arrow-left"></i> Back to List
+            </a>
+        </div>
+        <div class="card-body">
+            <dl class="row">
+                <dt class="col-sm-4">Member</dt>
+                <dd class="col-sm-8">{{ collection.member.first_name }} {{ collection.member.surname }} ({{ collection.member.member_id }})</dd>
+
+                <dt class="col-sm-4">Product</dt>
+                <dd class="col-sm-8">{{ collection.product.name }}</dd>
+
+                <dt class="col-sm-4">Quantity</dt>
+                <dd class="col-sm-8">{{ collection.quantity }}</dd>
+
+                <dt class="col-sm-4">Unit</dt>
+                <dd class="col-sm-8">{{ collection.unit }}</dd>
+
+                <dt class="col-sm-4">Unit Price</dt>
+                <dd class="col-sm-8">UGX {{ collection.unit_price|intcomma }}</dd>
+
+                <dt class="col-sm-4">Total Price</dt>
+                <dd class="col-sm-8">UGX {{ collection.total_price|intcomma }}</dd>
+
+                <dt class="col-sm-4">Quality Grade</dt>
+                <dd class="col-sm-8">{{ collection.get_quality_grade_display }}</dd>
+
+                <dt class="col-sm-4">Notes</dt>
+                <dd class="col-sm-8">{{ collection.notes|default:'-' }}</dd>
+
+                <dt class="col-sm-4">Collection Date</dt>
+                <dd class="col-sm-8">{{ collection.collection_date|date:'d M Y' }}</dd>
+
+                <dt class="col-sm-4">Reference</dt>
+                <dd class="col-sm-8">{{ collection.collection_reference|default:'-' }}</dd>
+
+                <dt class="col-sm-4">Created By</dt>
+                <dd class="col-sm-8">{{ collection.created_by|default:'-' }}</dd>
+
+                <dt class="col-sm-4">Created At</dt>
+                <dd class="col-sm-8">{{ collection.created_at|date:'d M Y H:i' }}</dd>
+
+                <dt class="col-sm-4">Last Updated</dt>
+                <dd class="col-sm-8">{{ collection.updated_at|date:'d M Y H:i' }}</dd>
+            </dl>
+        </div>
+    </div>
+</div>
+{% endblock %} 

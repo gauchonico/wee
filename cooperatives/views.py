@@ -39,6 +39,7 @@ from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.auth.models import User
 from django.db.models.functions import TruncMonth
 from django.http import JsonResponse
+from decimal import Decimal
 # District Views
 class DistrictListView(CustomLoginRequiredMixin, ListView):
     model = District
@@ -2316,9 +2317,10 @@ class CollectionListView(CustomLoginRequiredMixin, ListView):
         product_id = self.request.GET.get('product')
         start_date = self.request.GET.get('start_date')
         end_date = self.request.GET.get('end_date')
+        search_query = self.request.GET.get('search', '').strip()
 
         # Create cache key based on filters
-        cache_key = f'collection_stats_{member_id}_{product_id}_{start_date}_{end_date}'
+        cache_key = f'collection_stats_{member_id}_{product_id}_{start_date}_{end_date}_{search_query}'
         cached_stats = cache.get(cache_key)
 
         if cached_stats:
@@ -2336,6 +2338,12 @@ class CollectionListView(CustomLoginRequiredMixin, ListView):
                 stats_queryset = stats_queryset.filter(collection_date__gte=start_date)
             if end_date:
                 stats_queryset = stats_queryset.filter(collection_date__lte=end_date)
+            if search_query:
+                stats_queryset = stats_queryset.filter(
+                    Q(member__first_name__icontains=search_query) |
+                    Q(member__surname__icontains=search_query) |
+                    Q(member__member_id__icontains=search_query)
+                )
 
             # Calculate total statistics
             total_stats = stats_queryset.aggregate(
@@ -2353,6 +2361,7 @@ class CollectionListView(CustomLoginRequiredMixin, ListView):
 
             # Get member statistics
             member_stats = stats_queryset.values(
+                'member__id',
                 'member__first_name',
                 'member__surname'
             ).annotate(
@@ -2361,8 +2370,9 @@ class CollectionListView(CustomLoginRequiredMixin, ListView):
                 total_value=Sum('total_price')
             ).order_by('-total_value')[:10]  # Limit to top 10 members
 
-            # Get members and products for filters
-            members = Member.objects.all().order_by('first_name', 'surname')
+            # Only show members who have collections
+            member_ids_with_collections = Collection.objects.values_list('member_id', flat=True).distinct()
+            members = Member.objects.filter(id__in=member_ids_with_collections).order_by('first_name', 'surname')
             products = Product.objects.all().order_by('name')
 
             # Prepare context data
@@ -2374,6 +2384,7 @@ class CollectionListView(CustomLoginRequiredMixin, ListView):
                 'member_stats': member_stats,
                 'members': members,
                 'products': products,
+                'search_query': search_query,
             }
 
             # Cache the results for 15 minutes
@@ -2446,7 +2457,10 @@ class CollectionBulkUploadView(CustomLoginRequiredMixin, FormView):
                 try:
                     collection_date = datetime.strptime(row['collection_date'], '%Y-%m-%d').date()
                 except ValueError:
-                    raise ValueError("Invalid date format. Use YYYY-MM-DD")
+                    try:
+                        collection_date = datetime.strptime(row['collection_date'], '%d-%m-%Y').date()
+                    except ValueError:
+                        raise ValueError("Invalid date format. Use YYYY-MM-DD or DD-MM-YYYY")
 
                 # Get or create planting allocation
                 planting_allocation = None
@@ -2454,19 +2468,48 @@ class CollectionBulkUploadView(CustomLoginRequiredMixin, FormView):
                     # Try to find existing sunflower planting allocation
                     planting_allocation = planting_allocations.get((member.id, product.id))
                     if not planting_allocation:
-                        raise ValueError(f"No sunflower planting allocation found for member {member_id}")
+                        # Create sunflower planting allocation if missing
+                        planting_allocation = PlantingAllocation.objects.create(
+                            member=member,
+                            product=product,
+                            allocated_acres=member.land_acres * Decimal('0.2'),  # Allocate 20% of land
+                            planting_date=collection_date - timedelta(days=90),  # Assume planted 90 days before collection
+                            expected_harvest_date=collection_date,
+                            status='planted',
+                            notes=f"Created automatically during collection upload"
+                        )
+                        created_allocations.append(planting_allocation)
+                        # Update the cache for future lookups
+                        planting_allocations[(member.id, product.id)] = planting_allocation
                 else:
                     # For other products, create a new planting allocation based on land size
                     planting_allocation = PlantingAllocation.objects.create(
                         member=member,
                         product=product,
-                        allocated_acres=member.land_acres * 0.2,  # Allocate 20% of land
+                        allocated_acres=member.land_acres * Decimal('0.2'),  # Allocate 20% of land
                         planting_date=collection_date - timedelta(days=90),  # Assume planted 90 days before collection
                         expected_harvest_date=collection_date,
                         status='planted',
                         notes=f"Created automatically during collection upload"
                     )
                     created_allocations.append(planting_allocation)
+
+                # Check for duplicate collections
+                collection_reference = row.get('collection_reference', '')
+                duplicate = False
+                if collection_reference:
+                    if Collection.objects.filter(collection_reference=collection_reference).exists():
+                        duplicate = True
+                else:
+                    if Collection.objects.filter(
+                        member=member,
+                        product=product,
+                        collection_date=collection_date,
+                        quantity=quantity
+                    ).exists():
+                        duplicate = True
+                if duplicate:
+                    continue  # Skip this row if duplicate found
 
                 # Create collection
                 Collection.objects.create(
@@ -2478,7 +2521,7 @@ class CollectionBulkUploadView(CustomLoginRequiredMixin, FormView):
                     total_price=total_price,
                     collection_date=collection_date,
                     planting_allocation=planting_allocation,
-                    reference=row.get('collection_reference', ''),
+                    collection_reference=row.get('collection_reference', ''),
                     created_by=self.request.user
                 )
                 success_count += 1
@@ -3193,3 +3236,8 @@ class LoanDeleteAllView(CustomLoginRequiredMixin, View):
             messages.error(request, f'Error deleting loans: {str(e)}')
         
         return redirect('cooperatives:loan-list')
+
+class CollectionDetailView(CustomLoginRequiredMixin, DetailView):
+    model = Collection
+    template_name = 'cooperatives/collection_detail.html'
+    context_object_name = 'collection'
