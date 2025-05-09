@@ -76,6 +76,7 @@ urlpatterns = [
     path('members/<int:pk>/update/', views.MemberUpdateView.as_view(), name='member-update'),
     path('members/<int:pk>/delete/', views.MemberDeleteView.as_view(), name='member-delete'),
     path('members/bulk-upload/', views.MemberBulkUploadView.as_view(), name='member-bulk-upload'),
+    path('members/system-id-bulk-upload/', views.MemberSystemIdBulkUploadView.as_view(), name='member-system-id-bulk-upload'),
     path('members/sunflower-acreage/bulk-upload/', views.SunflowerAcreageBulkUploadView.as_view(), name='sunflower-acreage-bulk-upload'),
     path('members/assign-products/', views.MemberProductAssignmentView.as_view(), name='member-product-assignment'),
     path('members/bulk-update/', views.MemberBulkUpdateView.as_view(), name='member-bulk-update'),
@@ -132,4 +133,28 @@ urlpatterns = [
 
     path('collections/', views.CollectionListView.as_view(), name='collection_list'),
     path('collections/bulk-upload/', views.CollectionBulkUploadView.as_view(), name='collection_bulk_upload'),
+
+    # Loan Supplier URLs
+    path('loan-suppliers/', views.LoanSupplierListView.as_view(), name='loan-supplier-list'),
+    path('loan-suppliers/create/', views.LoanSupplierCreateView.as_view(), name='loan-supplier-create'),
+    path('loan-suppliers/<int:pk>/update/', views.LoanSupplierUpdateView.as_view(), name='loan-supplier-update'),
+    path('loan-suppliers/<int:pk>/delete/', views.LoanSupplierDeleteView.as_view(), name='loan-supplier-delete'),
+
+    # Credit Manager URLs
+    path('credit-managers/', views.CreditManagerListView.as_view(), name='credit-manager-list'),
+    path('credit-managers/create/', views.CreditManagerCreateView.as_view(), name='credit-manager-create'),
+    path('credit-managers/<int:pk>/update/', views.CreditManagerUpdateView.as_view(), name='credit-manager-update'),
+    path('credit-managers/<int:pk>/delete/', views.CreditManagerDeleteView.as_view(), name='credit-manager-delete'),
+    path('credit-managers/bulk-upload/', views.CreditManagerBulkUploadView.as_view(), name='credit-manager-bulk-upload'),
+
+    # Loan URLs
+    path('loans/', views.LoanListView.as_view(), name='loan-list'),
+    path('loans/create/', views.LoanCreateView.as_view(), name='loan-create'),
+    path('loans/<int:pk>/update/', views.LoanUpdateView.as_view(), name='loan-update'),
+    path('loans/<int:pk>/approve/', views.LoanApprovalView.as_view(), name='loan-approval'),
+    path('loans/<int:pk>/delete/', views.LoanDeleteView.as_view(), name='loan-delete'),
+    path('loans/bulk-upload/', views.LoanBulkUploadView.as_view(), name='loan-bulk-upload'),
+    path('loans/delete-all/', views.LoanDeleteAllView.as_view(), name='loan-delete-all'),
+    path('members/<int:member_id>/loans/', views.MemberLoanListView.as_view(), name='member-loans'),
+    path('loans/dashboard/', views.LoanDashboardView.as_view(), name='loan_dashboard'),
 ] 

@@ -41,7 +41,7 @@
                                 </tr>
                                 <tr>
                                     <th>Member ID</th>
-                                    <td>{{ member.member_id }}</td>
+                                    <td>{{ member.member_id }}-{{member.system_id}}</td>
                                 </tr>
                                 <tr>
                                     <th>Gender</th>
@@ -229,6 +229,63 @@
                                     </div>
                                     {% endif %}
                                 </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- New Loans Section -->
+                    <div class="card mt-4">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <h5 class="card-title mb-0">Member Loans</h5>
+                            <a href="{% url 'cooperatives:loan-create' %}?member={{ member.pk }}" class="btn btn-primary btn-sm">
+                                <i class="fas fa-plus"></i> New Loan
+                            </a>
+                        </div>
+                        <div class="card-body">
+                            <div class="table-responsive">
+                                <table class="table table-striped">
+                                    <thead>
+                                        <tr>
+                                            <th>Request Date</th>
+                                            <th>Request Amount</th>
+                                            <th>Approved Amount</th>
+                                            <th>Status</th>
+                                            <th>Credit Manager</th>
+                                            <th>Loan Supplier</th>
+                                            <th>Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for loan in member.loan_set.all %}
+                                        <tr>
+                                            <td>{{ loan.request_date|date:"M d, Y" }}</td>
+                                            <td>{{ loan.request_amount }}</td>
+                                            <td>{{ loan.approved_amount|default:"-" }}</td>
+                                            <td>
+                                                <span class="badge {% if loan.status == 'approved' %}bg-success{% elif loan.status == 'pending' %}bg-warning{% elif loan.status == 'rejected' %}bg-danger{% else %}bg-info{% endif %}">
+                                                    {{ loan.get_status_display }}
+                                                </span>
+                                            </td>
+                                            <td>{{ loan.credit_manager.user.get_full_name|default:"-" }}</td>
+                                            <td>{{ loan.loan_supplier.name|default:"-" }}</td>
+                                            <td>
+                                                <a href="{% url 'cooperatives:loan-update' loan.pk %}" class="btn btn-sm btn-info">
+                                                    <i class="fas fa-edit"></i>
+                                                </a>
+                                                {% if loan.status == 'pending' %}
+                                                <a href="{% url 'cooperatives:loan-approval' loan.pk %}" class="btn btn-sm btn-success">
+                                                    <i class="fas fa-check"></i>
+                                                </a>
+                                                {% endif %}
+                                            </td>
+                                        </tr>
+                                        {% empty %}
+                                        <tr>
+                                            <td colspan="7" class="text-center">No loans found for this member.</td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
                             </div>
                         </div>
                     </div>

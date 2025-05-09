@@ -1,0 +1,49 @@
+{% extends 'base.html' %}
+
+{% block title %}Delete All Loans{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header bg-danger text-white">
+                    <h2 class="card-title mb-0">Delete All Loans</h2>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-danger">
+                        <h4 class="alert-heading">Warning!</h4>
+                        <p>You are about to delete <strong>ALL</strong> loan records from the system. This action cannot be undone.</p>
+                        <hr>
+                        <p class="mb-0">Please type "DELETE ALL LOANS" in the confirmation box below to proceed.</p>
+                    </div>
+
+                    <form method="post">
+                        {% csrf_token %}
+                        <div class="mb-3">
+                            <label for="confirmation" class="form-label">Confirmation</label>
+                            <input type="text" class="form-control" id="confirmation" name="confirmation" 
+                                   placeholder="Type DELETE ALL LOANS" required>
+                        </div>
+                        <div class="d-flex justify-content-between">
+                            <a href="{% url 'cooperatives:loan-list' %}" class="btn btn-secondary">Cancel</a>
+                            <button type="submit" class="btn btn-danger" id="deleteButton" disabled>
+                                Delete All Loans
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% block extra_js %}
+<script>
+    document.getElementById('confirmation').addEventListener('input', function(e) {
+        const deleteButton = document.getElementById('deleteButton');
+        deleteButton.disabled = e.target.value !== 'DELETE ALL LOANS';
+    });
+</script>
+{% endblock %}
+{% endblock %} 

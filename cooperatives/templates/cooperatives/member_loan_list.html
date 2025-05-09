@@ -1,0 +1,119 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ member }}'s Loans{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1>{{ member }}'s Loans</h1>
+        <a href="{% url 'cooperatives:loan-create' %}?member={{ member.pk }}" class="btn btn-primary">
+            <i class="fas fa-plus"></i> New Loan Request
+        </a>
+    </div>
+
+    <!-- Member Details -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-6">
+                    <p><strong>National ID:</strong> {{ member.national_id }}</p>
+                    <p><strong>Phone Number:</strong> {{ member.phone_number }}</p>
+                </div>
+                <div class="col-md-6">
+                    <p><strong>Cooperative:</strong> {{ member.cooperative.fpo_name }}</p>
+                    <p><strong>Total Land:</strong> {{ member.total_land }} acres</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Loans Table -->
+    <div class="card">
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>Request Date</th>
+                            <th>Request Amount</th>
+                            <th>Approved Amount</th>
+                            <th>Status</th>
+                            <th>Credit Manager</th>
+                            <th>Loan Supplier</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for loan in loans %}
+                        <tr>
+                            <td>{{ loan.request_date }}</td>
+                            <td>{{ loan.request_amount }}</td>
+                            <td>{{ loan.approved_amount|default:"-" }}</td>
+                            <td>
+                                <span class="badge {% if loan.status == 'approved' %}bg-success
+                                                 {% elif loan.status == 'pending' %}bg-warning
+                                                 {% elif loan.status == 'rejected' %}bg-danger
+                                                 {% elif loan.status == 'disbursed' %}bg-info
+                                                 {% elif loan.status == 'repaid' %}bg-success
+                                                 {% else %}bg-secondary{% endif %}">
+                                    {{ loan.get_status_display }}
+                                </span>
+                            </td>
+                            <td>{{ loan.credit_manager|default:"-" }}</td>
+                            <td>{{ loan.loan_supplier }}</td>
+                            <td>
+                                {% if loan.status == 'pending' %}
+                                <a href="{% url 'cooperatives:loan-approval' loan.pk %}" class="btn btn-sm btn-primary">
+                                    <i class="fas fa-check"></i> Approve
+                                </a>
+                                {% endif %}
+                                <a href="{% url 'cooperatives:loan-update' loan.pk %}" class="btn btn-sm btn-info">
+                                    <i class="fas fa-edit"></i>
+                                </a>
+                                <a href="{% url 'cooperatives:loan-delete' loan.pk %}" class="btn btn-sm btn-danger">
+                                    <i class="fas fa-trash"></i>
+                                </a>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="7" class="text-center">No loans found for this member.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            {% if is_paginated %}
+            <nav aria-label="Page navigation" class="mt-4">
+                <ul class="pagination justify-content-center">
+                    {% if page_obj.has_previous %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page=1">&laquo; First</a>
+                    </li>
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.previous_page_number }}">Previous</a>
+                    </li>
+                    {% endif %}
+
+                    <li class="page-item active">
+                        <span class="page-link">
+                            Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
+                        </span>
+                    </li>
+
+                    {% if page_obj.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.next_page_number }}">Next</a>
+                    </li>
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}">Last &raquo;</a>
+                    </li>
+                    {% endif %}
+                </ul>
+            </nav>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %} 

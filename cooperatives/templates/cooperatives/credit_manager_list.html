@@ -1,0 +1,87 @@
+{% extends 'base.html' %}
+
+{% block title %}Credit Managers{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="h3 mb-0">Credit Managers</h1>
+        <div>
+            <a href="{% url 'cooperatives:credit-manager-bulk-upload' %}" class="btn btn-success">
+                <i class="fas fa-upload"></i> Bulk Upload
+            </a>
+            <a href="{% url 'cooperatives:credit-manager-create' %}" class="btn btn-primary">
+                <i class="fas fa-plus"></i> New Credit Manager
+            </a>
+        </div>
+    </div>
+
+    <div class="card shadow mb-4">
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-bordered" id="dataTable" width="100%" cellspacing="0">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Phone Number</th>
+                            <th>Email</th>
+                            <th>Type</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for manager in managers %}
+                        <tr>
+                            <td>{{ manager.user.get_full_name }}</td>
+                            <td>{{ manager.phone_number }}</td>
+                            <td>{{ manager.user.email }}</td>
+                            <td>
+                                {% if manager.is_credit_manager %}
+                                    <span class="badge badge-info">Agent</span>
+                                {% else %}
+                                    <span class="badge badge-primary">Credit Manager</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if manager.is_active %}
+                                    <span class="badge badge-success">Active</span>
+                                {% else %}
+                                    <span class="badge badge-danger">Inactive</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if manager.is_credit_manager %}
+                                    <a href="{% url 'agents:agent-update' manager.pk %}" class="btn btn-sm btn-primary">
+                                        <i class="fas fa-edit"></i>
+                                    </a>
+                                {% else %}
+                                    <a href="{% url 'cooperatives:credit-manager-update' manager.pk %}" class="btn btn-sm btn-primary">
+                                        <i class="fas fa-edit"></i>
+                                    </a>
+                                    <a href="{% url 'cooperatives:credit-manager-delete' manager.pk %}" class="btn btn-sm btn-danger">
+                                        <i class="fas fa-trash"></i>
+                                    </a>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="6" class="text-center">No credit managers found.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    $(document).ready(function() {
+        $('#dataTable').DataTable();
+    });
+</script>
+{% endblock %} 

@@ -117,7 +117,19 @@
                     <i class="bi bi-info-circle"></i> No districts assigned to this agent.
                 </div>
                 {% endif %}
-                
+                {% if agent.is_credit_manager %}
+                    
+                    <div class="form-check form-switch">
+                        <input type="checkbox" class="form-check-input" checked id="customSwitch2">
+                        <label class="form-check-label" for="customSwitch2">Is Credit Manager</label>
+                    </div>
+                {% else %}
+                <div class="form-check form-switch">
+                    <input type="checkbox" class="form-check-input" disabled id="customSwitch3">
+                    <label class="form-check-label" for="customSwitch3">Not Credit Manager</label>
+                </div>
+                {% endif %}
+                <div class="mt-3">
                     <p>Price per Profile: UGX {{ current_incentive.price_per_farmer|floatformat:0|intcomma }}</p>
                     <p><strong>Start Date:</strong> {{ current_incentive.start_date }}</p>
                     {% if current_incentive.end_date %}
@@ -127,6 +139,7 @@
                     {% comment %} <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#incentiveModal">
                         Update Incentive Rate
                     </button> {% endcomment %}
+                </div>
                 
             </div>
         </div>

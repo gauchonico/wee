@@ -7,14 +7,16 @@ from django.contrib import messages
 from .models import (
     District, County, SubCounty, Parish, Village, PaymentMode,
     Cooperative, FarmerGroup, Member, Product, Price, Unit, Supplier, SupplierProduct,
-    PlantingAllocation, Collection
+    PlantingAllocation, Collection, LoanSupplier, CreditManager, Loan
 )
+from agents.models import Agent
 from .forms import (
     DistrictForm, CountyForm, SubCountyForm, ParishForm, VillageForm, PaymentModeForm,
     CooperativeForm, FarmerGroupForm, MemberForm, ProductForm, PriceForm, UnitForm, CooperativeBulkUploadForm,
     ParishBulkUploadForm, VillageBulkUploadForm, SubCountyBulkUploadForm, CountyBulkUploadForm, DistrictBulkUploadForm,
     FarmerGroupBulkUploadForm, MemberBulkUploadForm, SunflowerAcreageBulkUploadForm, SupplierForm, SupplierProductBulkUploadForm,
-    PlantingAllocationForm, CollectionForm, CollectionBulkUploadForm
+    PlantingAllocationForm, CollectionForm, CollectionBulkUploadForm, LoanSupplierForm, CreditManagerForm, LoanForm, LoanApprovalForm,
+    LoanBulkUploadForm
 )
 from .mixins import CustomLoginRequiredMixin
 import csv
@@ -33,7 +35,10 @@ from django.utils.decorators import method_decorator
 from django.views.decorators.cache import cache_page
 from django.utils import timezone
 from datetime import timedelta
-
+from django.contrib.auth.mixins import LoginRequiredMixin
+from django.contrib.auth.models import User
+from django.db.models.functions import TruncMonth
+from django.http import JsonResponse
 # District Views
 class DistrictListView(CustomLoginRequiredMixin, ListView):
     model = District
@@ -2498,3 +2503,693 @@ class CollectionBulkUploadView(CustomLoginRequiredMixin, FormView):
                 messages.warning(self.request, f"... and {len(error_messages) - 5} more errors")
 
         return super().form_valid(form)
+
+# Loan Supplier Views
+class LoanSupplierListView(CustomLoginRequiredMixin, ListView):
+    model = LoanSupplier
+    template_name = 'cooperatives/loan_supplier_list.html'
+    context_object_name = 'suppliers'
+    ordering = ['name']
+
+class LoanSupplierCreateView(CustomLoginRequiredMixin, CreateView):
+    model = LoanSupplier
+    form_class = LoanSupplierForm
+    template_name = 'cooperatives/loan_supplier_form.html'
+    success_url = reverse_lazy('cooperatives:loan-supplier-list')
+
+    def form_valid(self, form):
+        form.instance.created_by = self.request.user
+        messages.success(self.request, 'Loan supplier created successfully.')
+        return super().form_valid(form)
+
+class LoanSupplierUpdateView(CustomLoginRequiredMixin, UpdateView):
+    model = LoanSupplier
+    form_class = LoanSupplierForm
+    template_name = 'cooperatives/loan_supplier_form.html'
+    success_url = reverse_lazy('cooperatives:loan-supplier-list')
+
+    def form_valid(self, form):
+        messages.success(self.request, 'Loan supplier updated successfully.')
+        return super().form_valid(form)
+
+class LoanSupplierDeleteView(CustomLoginRequiredMixin, DeleteView):
+    model = LoanSupplier
+    template_name = 'cooperatives/loan_supplier_confirm_delete.html'
+    success_url = reverse_lazy('cooperatives:loan-supplier-list')
+
+    def delete(self, request, *args, **kwargs):
+        messages.success(request, 'Loan supplier deleted successfully.')
+        return super().delete(request, *args, **kwargs)
+
+# Credit Manager Views
+class CreditManagerListView(LoginRequiredMixin, ListView):
+    model = CreditManager
+    template_name = 'cooperatives/credit_manager_list.html'
+    context_object_name = 'managers'
+
+    def get_queryset(self):
+        # Get regular credit managers
+        credit_managers = CreditManager.objects.filter(is_active=True)
+        # Get agents who are credit managers
+        agent_managers = Agent.objects.filter(is_active=True, is_credit_manager=True)
+        return list(credit_managers) + list(agent_managers)
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['title'] = 'Credit Managers'
+        return context
+
+class CreditManagerCreateView(CustomLoginRequiredMixin, CreateView):
+    model = CreditManager
+    form_class = CreditManagerForm
+    template_name = 'cooperatives/credit_manager_form.html'
+    success_url = reverse_lazy('cooperatives:credit-manager-list')
+
+    def form_valid(self, form):
+        messages.success(self.request, 'Credit manager created successfully.')
+        return super().form_valid(form)
+
+class CreditManagerUpdateView(CustomLoginRequiredMixin, UpdateView):
+    model = CreditManager
+    form_class = CreditManagerForm
+    template_name = 'cooperatives/credit_manager_form.html'
+    success_url = reverse_lazy('cooperatives:credit-manager-list')
+
+    def form_valid(self, form):
+        messages.success(self.request, 'Credit manager updated successfully.')
+        return super().form_valid(form)
+
+class CreditManagerDeleteView(CustomLoginRequiredMixin, DeleteView):
+    model = CreditManager
+    template_name = 'cooperatives/credit_manager_confirm_delete.html'
+    success_url = reverse_lazy('cooperatives:credit-manager-list')
+
+    def delete(self, request, *args, **kwargs):
+        messages.success(request, 'Credit manager deleted successfully.')
+        return super().delete(request, *args, **kwargs)
+
+class CreditManagerBulkUploadView(LoginRequiredMixin, View):
+    template_name = 'cooperatives/credit_manager_bulk_upload.html'
+    
+    def get(self, request):
+        return render(request, self.template_name)
+    
+    def post(self, request):
+        if 'csv_file' not in request.FILES:
+            messages.error(request, 'Please select a CSV file to upload.')
+            return render(request, self.template_name)
+        
+        csv_file = request.FILES['csv_file']
+        if not csv_file.name.endswith('.csv'):
+            messages.error(request, 'Please upload a CSV file.')
+            return render(request, self.template_name)
+        
+        results = []
+        try:
+            decoded_file = csv_file.read().decode('utf-8')
+            csv_reader = csv.DictReader(decoded_file.splitlines())
+            
+            for row in csv_reader:
+                result = {
+                    'agent_name': row.get('agent_name', '').strip(),
+                    'phone_number': row.get('phone_number', '').strip(),
+                    'success': False,
+                    'message': ''
+                }
+                
+                if not result['agent_name'] or not result['phone_number']:
+                    result['message'] = 'Agent name and phone number are required.'
+                    results.append(result)
+                    continue
+                
+                try:
+                    # Create user
+                    username = result['agent_name'].lower().replace(' ', '_')
+                    email = f"{username}@example.com"  # Generate a temporary email
+                    
+                    if User.objects.filter(username=username).exists():
+                        result['message'] = f'Username {username} already exists.'
+                        results.append(result)
+                        continue
+                    
+                    user = User.objects.create_user(
+                        username=username,
+                        email=email,
+                        password='agent12345',
+                        first_name=result['agent_name'].split()[0],
+                        last_name=' '.join(result['agent_name'].split()[1:]) if len(result['agent_name'].split()) > 1 else ''
+                    )
+                    
+                    # Create credit manager
+                    CreditManager.objects.create(
+                        user=user,
+                        phone_number=result['phone_number'],
+                        is_active=True
+                    )
+                    
+                    result['success'] = True
+                    result['message'] = 'Credit manager created successfully.'
+                except Exception as e:
+                    result['message'] = f'Error: {str(e)}'
+                
+                results.append(result)
+            
+            messages.success(request, f'Processed {len(results)} credit managers.')
+        except Exception as e:
+            messages.error(request, f'Error processing CSV file: {str(e)}')
+        
+        return render(request, self.template_name, {'results': results})
+
+# Loan Views
+class LoanListView(CustomLoginRequiredMixin, ListView):
+    model = Loan
+    template_name = 'cooperatives/loan_list.html'
+    context_object_name = 'loans'
+    paginate_by = 50
+
+    def get_queryset(self):
+        queryset = Loan.objects.select_related(
+            'member', 'cooperative', 'credit_manager', 'loan_supplier'
+        ).order_by('-request_date')
+
+        # Filter by status if provided
+        status = self.request.GET.get('status')
+        if status:
+            queryset = queryset.filter(status=status)
+
+        # Filter by cooperative if provided
+        cooperative_id = self.request.GET.get('cooperative')
+        if cooperative_id:
+            queryset = queryset.filter(cooperative_id=cooperative_id)
+
+        # Filter by date range if provided
+        start_date = self.request.GET.get('start_date')
+        end_date = self.request.GET.get('end_date')
+        if start_date:
+            queryset = queryset.filter(request_date__gte=start_date)
+        if end_date:
+            queryset = queryset.filter(request_date__lte=end_date)
+
+        return queryset
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['cooperatives'] = Cooperative.objects.all()
+        context['status_choices'] = Loan.STATUS_CHOICES
+        return context
+
+class LoanCreateView(LoginRequiredMixin, CreateView):
+    model = Loan
+    form_class = LoanForm
+    template_name = 'cooperatives/loan_form.html'
+    success_url = reverse_lazy('cooperatives:loan-list')
+
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        member_pk = self.kwargs.get('member_pk')
+        if member_pk:
+            member = get_object_or_404(Member, pk=member_pk)
+            kwargs['initial'] = {
+                'member': member,
+                'national_id': member.id_number,
+                'phone_number': member.phone_number,
+                'cooperative': member.cooperative
+            }
+        return kwargs
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        # Get regular credit managers
+        credit_managers = CreditManager.objects.filter(is_active=True)
+        # Get agents who are credit managers
+        agents = Agent.objects.filter(is_credit_manager=True)
+        
+        # Create a list of tuples for the form choices
+        manager_choices = []
+        
+        # Add regular credit managers
+        for manager in credit_managers:
+            manager_choices.append((
+                f'credit_manager_{manager.id}',
+                f"{manager.user.get_full_name()} (Credit Manager)"
+            ))
+        
+        # Add agents who are credit managers
+        for agent in agents:
+            manager_choices.append((
+                f'agent_{agent.id}',
+                f"{agent.user.get_full_name()} (Agent)"
+            ))
+        
+        context['credit_managers'] = manager_choices
+        context['loan_suppliers'] = LoanSupplier.objects.all()
+        context['title'] = 'Create New Loan'
+        return context
+
+    def form_valid(self, form):
+        # Get the selected credit manager or agent
+        credit_manager_id = form.cleaned_data.get('credit_manager')
+        if credit_manager_id:
+            manager_type, manager_id = credit_manager_id.split('_')
+            if manager_type == 'credit_manager':
+                form.instance.credit_manager = CreditManager.objects.get(id=manager_id)
+            else:  # agent
+                form.instance.credit_manager = None  # We'll handle this differently if needed
+        
+        form.instance.created_by = self.request.user
+        return super().form_valid(form)
+
+class LoanUpdateView(CustomLoginRequiredMixin, UpdateView):
+    model = Loan
+    form_class = LoanForm
+    template_name = 'cooperatives/loan_form.html'
+    success_url = reverse_lazy('cooperatives:loan-list')
+
+    def form_valid(self, form):
+        messages.success(self.request, 'Loan request updated successfully.')
+        return super().form_valid(form)
+
+class LoanApprovalView(CustomLoginRequiredMixin, UpdateView):
+    model = Loan
+    form_class = LoanApprovalForm
+    template_name = 'cooperatives/loan_approval_form.html'
+    success_url = reverse_lazy('cooperatives:loan-list')
+
+    def form_valid(self, form):
+        messages.success(self.request, 'Loan request status updated successfully.')
+        return super().form_valid(form)
+
+class LoanDeleteView(CustomLoginRequiredMixin, DeleteView):
+    model = Loan
+    template_name = 'cooperatives/loan_confirm_delete.html'
+    success_url = reverse_lazy('cooperatives:loan-list')
+
+    def delete(self, request, *args, **kwargs):
+        messages.success(request, 'Loan request deleted successfully.')
+        return super().delete(request, *args, **kwargs)
+
+class LoanBulkUploadView(CustomLoginRequiredMixin, FormView):
+    template_name = 'cooperatives/loan_bulk_upload.html'
+    form_class = LoanBulkUploadForm
+    success_url = reverse_lazy('cooperatives:loan-list')
+
+    def form_valid(self, form):
+        csv_file = form.cleaned_data['csv_file']
+        decoded_file = csv_file.read().decode('utf-8')
+        io_string = io.StringIO(decoded_file)
+        csv_data = csv.DictReader(io_string)
+        
+        success_count = 0
+        error_count = 0
+        error_messages = []
+        missing_member_ids = set()
+
+        # Get default loan supplier
+        try:
+            default_loan_supplier = LoanSupplier.objects.get(id=1)
+        except LoanSupplier.DoesNotExist:
+            error_messages.append("Default loan supplier (ID: 1) not found. Please create a loan supplier first.")
+            messages.error(self.request, "Default loan supplier (ID: 1) not found. Please create a loan supplier first.")
+            return redirect(self.success_url)
+
+        # First pass: collect all member IDs from the CSV
+        for row in csv_data:
+            member_id = row.get('member_id')
+            if member_id:
+                missing_member_ids.add(member_id)
+
+        # Check which member IDs exist in the database
+        existing_members = Member.objects.filter(member_id__in=missing_member_ids)
+        existing_member_ids = set(member.member_id for member in existing_members)
+        missing_member_ids = missing_member_ids - existing_member_ids
+
+        if missing_member_ids:
+            # Get all members to show similar IDs
+            all_members = Member.objects.all()
+            similar_members = []
+            for missing_id in missing_member_ids:
+                # Find members with similar member IDs
+                similar = all_members.filter(member_id__icontains=missing_id[:4])[:5]
+                if similar:
+                    similar_members.append(f"\nSimilar member IDs found for {missing_id}:")
+                    for member in similar:
+                        similar_members.append(f"- {member.member_id}: {member.first_name} {member.surname}")
+            
+            error_messages.append(f"The following member IDs were not found in the database: {', '.join(sorted(missing_member_ids))}")
+            if similar_members:
+                error_messages.append("\n".join(similar_members))
+            error_count += len(missing_member_ids)
+
+        # Reset the CSV reader for the second pass
+        io_string.seek(0)
+        csv_data = csv.DictReader(io_string)
+
+        # Get all agents and credit managers in advance for better performance
+        all_agents = {}
+        for agent in Agent.objects.all():
+            all_agents[str(agent.id)] = agent
+            # Also store by user ID for additional lookup
+            all_agents[str(agent.user.id)] = agent
+
+        # Log all available agent IDs for debugging
+        messages.info(self.request, f"Available agent IDs: {', '.join(sorted(all_agents.keys()))}")
+
+        for row in csv_data:
+            try:
+                # Get member by member_id
+                try:
+                    member = Member.objects.get(member_id=row['member_id'])
+                except Member.DoesNotExist:
+                    continue  # Skip this row as we already reported the missing member
+
+                # Get agent by ID with better error handling
+                try:
+                    agent_id = str(row['agent_id']).strip()
+                    agent = all_agents.get(agent_id)
+                    
+                    if not agent:
+                        # Try to find the agent in the database directly
+                        try:
+                            agent = Agent.objects.get(id=agent_id)
+                            all_agents[agent_id] = agent  # Cache it for future lookups
+                            messages.info(self.request, f"Found agent {agent_id} through direct database lookup")
+                        except Agent.DoesNotExist:
+                            error_messages.append(f"Row {csv_data.line_num}: Agent with ID {agent_id} not found. Available agent IDs: {', '.join(sorted(all_agents.keys()))}")
+                            error_count += 1
+                            continue
+                        except Exception as e:
+                            error_messages.append(f"Row {csv_data.line_num}: Error looking up agent {agent_id}: {str(e)}")
+                            error_count += 1
+                            continue
+
+                except Exception as e:
+                    error_messages.append(f"Row {csv_data.line_num}: Error processing agent ID: {str(e)}")
+                    error_count += 1
+                    continue
+
+                # Parse dates with better error handling
+                try:
+                    request_date_str = row['request_date'].strip()
+                    date_of_birth_str = row['date_of_birth'].strip()
+                    
+                    # Try parsing with different date formats
+                    date_formats = ['%Y-%m-%d', '%d/%m/%Y', '%m/%d/%Y', '%d-%m-%Y', '%m-%d-%Y']
+                    
+                    request_date = None
+                    date_of_birth = None
+                    
+                    for date_format in date_formats:
+                        try:
+                            request_date = datetime.strptime(request_date_str, date_format).date()
+                            break
+                        except ValueError:
+                            continue
+                            
+                    for date_format in date_formats:
+                        try:
+                            date_of_birth = datetime.strptime(date_of_birth_str, date_format).date()
+                            break
+                        except ValueError:
+                            continue
+                    
+                    if not request_date:
+                        error_messages.append(f"Row {csv_data.line_num}: Invalid request date format '{request_date_str}'. Please use YYYY-MM-DD format.")
+                        error_count += 1
+                        continue
+                        
+                    if not date_of_birth:
+                        error_messages.append(f"Row {csv_data.line_num}: Invalid date of birth format '{date_of_birth_str}'. Please use YYYY-MM-DD format.")
+                        error_count += 1
+                        continue
+                        
+                except Exception as e:
+                    error_messages.append(f"Row {csv_data.line_num}: Error processing dates: {str(e)}")
+                    error_count += 1
+                    continue
+
+                # Parse amounts
+                try:
+                    amount_requested = float(row['amount_requested'])
+                    amount_approved = float(row['amount_approved']) if row['amount_approved'] else None
+                except ValueError:
+                    error_messages.append(f"Row {csv_data.line_num}: Invalid amount format")
+                    error_count += 1
+                    continue
+
+                # Validate status
+                status = row['status'].lower()
+                if status not in dict(Loan.STATUS_CHOICES).keys():
+                    error_messages.append(f"Row {csv_data.line_num}: Invalid status '{status}'")
+                    error_count += 1
+                    continue
+
+                # Get or create credit manager for the agent
+                credit_manager = None
+                if agent.is_credit_manager:
+                    # Try to get existing credit manager for this agent
+                    credit_manager = CreditManager.objects.filter(user=agent.user).first()
+                    
+                    # If no credit manager exists for this agent, create one
+                    if not credit_manager:
+                        credit_manager = CreditManager.objects.create(
+                            user=agent.user,
+                            phone_number=agent.phone_number,
+                            is_active=True
+                        )
+                else:
+                    # If agent is not a credit manager, try to find a default credit manager
+                    default_credit_manager = CreditManager.objects.filter(is_active=True).first()
+                    if default_credit_manager:
+                        credit_manager = default_credit_manager
+                    else:
+                        error_messages.append(f"Row {csv_data.line_num}: Agent {agent.user.get_full_name()} is not a credit manager and no default credit manager found")
+                        error_count += 1
+                        continue
+
+                # Create loan request with default loan supplier
+                loan = Loan.objects.create(
+                    member=member,
+                    cooperative=member.cooperative,
+                    request_date=request_date,
+                    request_amount=amount_requested,
+                    approved_amount=amount_approved,
+                    status=status,
+                    credit_manager=credit_manager,
+                    loan_supplier=default_loan_supplier,
+                    notes=f"Bulk uploaded. Date of birth: {date_of_birth}",
+                    created_by=self.request.user
+                )
+
+                success_count += 1
+
+            except Exception as e:
+                error_messages.append(f"Row {csv_data.line_num}: {str(e)}")
+                error_count += 1
+
+        # Add messages for user feedback
+        if success_count > 0:
+            messages.success(self.request, f"Successfully imported {success_count} loan requests")
+        if error_count > 0:
+            messages.warning(self.request, f"Failed to import {error_count} loan requests")
+            for error in error_messages[:5]:  # Show first 5 errors
+                messages.error(self.request, error)
+            if len(error_messages) > 5:
+                messages.warning(self.request, f"... and {len(error_messages) - 5} more errors")
+
+        return super().form_valid(form)
+
+class MemberLoanListView(CustomLoginRequiredMixin, ListView):
+    model = Loan
+    template_name = 'cooperatives/member_loan_list.html'
+    context_object_name = 'loans'
+    
+    def get_queryset(self):
+        member = get_object_or_404(Member, pk=self.kwargs['member_pk'])
+        return Loan.objects.filter(member=member).select_related(
+            'cooperative', 'credit_manager', 'loan_supplier'
+        ).order_by('-request_date')
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['member'] = get_object_or_404(Member, pk=self.kwargs['member_pk'])
+        return context
+
+class MemberSystemIdBulkUploadView(LoginRequiredMixin, View):
+    template_name = 'cooperatives/member_system_id_bulk_upload.html'
+
+    def get(self, request):
+        return render(request, self.template_name)
+
+    def post(self, request):
+        if 'csv_file' not in request.FILES:
+            messages.error(request, 'No file uploaded')
+            return render(request, self.template_name)
+
+        csv_file = request.FILES['csv_file']
+        if not csv_file.name.endswith('.csv'):
+            messages.error(request, 'Please upload a CSV file')
+            return render(request, self.template_name)
+
+        results = []
+        try:
+            decoded_file = csv_file.read().decode('utf-8')
+            csv_reader = csv.DictReader(decoded_file.splitlines())
+            
+            for row in csv_reader:
+                member_id = row.get('member_id')
+                system_id = row.get('system_id')
+                
+                if not member_id or not system_id:
+                    results.append({
+                        'member_id': member_id,
+                        'system_id': system_id,
+                        'success': False,
+                        'message': 'Missing member_id or system_id'
+                    })
+                    continue
+
+                try:
+                    member = Member.objects.get(member_id=member_id)
+                    
+                    # Check if system_id is already in use
+                    if Member.objects.filter(system_id=system_id).exclude(pk=member.pk).exists():
+                        results.append({
+                            'member_id': member_id,
+                            'system_id': system_id,
+                            'success': False,
+                            'message': f'System ID {system_id} is already in use'
+                        })
+                        continue
+
+                    member.system_id = system_id
+                    member.save()
+                    
+                    results.append({
+                        'member_id': member_id,
+                        'system_id': system_id,
+                        'success': True,
+                        'message': 'Successfully updated'
+                    })
+                except Member.DoesNotExist:
+                    results.append({
+                        'member_id': member_id,
+                        'system_id': system_id,
+                        'success': False,
+                        'message': f'Member with ID {member_id} not found'
+                    })
+                except Exception as e:
+                    results.append({
+                        'member_id': member_id,
+                        'system_id': system_id,
+                        'success': False,
+                        'message': str(e)
+                    })
+
+            messages.success(request, f'Processed {len(results)} records')
+        except Exception as e:
+            messages.error(request, f'Error processing file: {str(e)}')
+            return render(request, self.template_name)
+
+        return render(request, self.template_name, {'results': results})
+
+class LoanDashboardView(CustomLoginRequiredMixin, TemplateView):
+    template_name = 'cooperatives/loan_dashboard.html'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        
+        # Get total loan statistics
+        total_loans = Loan.objects.count()
+        total_requested = float(Loan.objects.aggregate(total=Sum('request_amount'))['total'] or 0)
+        total_approved = float(Loan.objects.aggregate(total=Sum('approved_amount'))['total'] or 0)
+        
+        # Get status-wise statistics
+        status_stats = Loan.objects.values('status').annotate(
+            count=Count('id'),
+            total_requested=Sum('request_amount'),
+            total_approved=Sum('approved_amount')
+        ).order_by('status')
+        
+        # Get top credit managers by number of loans
+        top_credit_managers = Loan.objects.values(
+            'credit_manager__user__first_name',
+            'credit_manager__user__last_name'
+        ).annotate(
+            loan_count=Count('id'),
+            total_requested=Sum('request_amount'),
+            total_approved=Sum('approved_amount')
+        ).order_by('-loan_count')[:10]
+        
+        # Get top members by number of loans
+        top_members = Loan.objects.values(
+            'member__first_name',
+            'member__surname',
+            'member__member_id'
+        ).annotate(
+            loan_count=Count('id'),
+            total_requested=Sum('request_amount'),
+            total_approved=Sum('approved_amount')
+        ).order_by('-loan_count')[:10]
+        
+        # Get monthly loan trends
+        monthly_trends = Loan.objects.annotate(
+            month=TruncMonth('request_date')
+        ).values('month').annotate(
+            count=Count('id'),
+            total_requested=Sum('request_amount'),
+            total_approved=Sum('approved_amount')
+        ).order_by('month')
+        
+        # Prepare data for charts
+        status_labels = [dict(Loan.STATUS_CHOICES)[stat['status']] for stat in status_stats]
+        status_counts = [stat['count'] for stat in status_stats]
+        status_requested = [float(stat['total_requested'] or 0) for stat in status_stats]
+        status_approved = [float(stat['total_approved'] or 0) for stat in status_stats]
+        
+        monthly_labels = [trend['month'].strftime('%B %Y') for trend in monthly_trends]
+        monthly_counts = [trend['count'] for trend in monthly_trends]
+        monthly_requested = [float(trend['total_requested'] or 0) for trend in monthly_trends]
+        monthly_approved = [float(trend['total_approved'] or 0) for trend in monthly_trends]
+        
+        context.update({
+            'total_loans': total_loans,
+            'total_requested': total_requested,
+            'total_approved': total_approved,
+            'status_stats': status_stats,
+            'top_credit_managers': top_credit_managers,
+            'top_members': top_members,
+            'monthly_trends': monthly_trends,
+            
+            # Chart data
+            'status_labels': json.dumps(status_labels),
+            'status_counts': json.dumps(status_counts),
+            'status_requested': json.dumps(status_requested),
+            'status_approved': json.dumps(status_approved),
+            'monthly_labels': json.dumps(monthly_labels),
+            'monthly_counts': json.dumps(monthly_counts),
+            'monthly_requested': json.dumps(monthly_requested),
+            'monthly_approved': json.dumps(monthly_approved),
+        })
+        
+        return context
+
+class LoanDeleteAllView(CustomLoginRequiredMixin, View):
+    template_name = 'cooperatives/loan_delete_all.html'
+    
+    def get(self, request):
+        return render(request, self.template_name)
+    
+    def post(self, request):
+        confirmation = request.POST.get('confirmation', '').strip()
+        if confirmation != 'DELETE ALL LOANS':
+            messages.error(request, 'Invalid confirmation text. Please type "DELETE ALL LOANS" exactly as shown.')
+            return render(request, self.template_name)
+        
+        try:
+            # Delete all loans
+            count = Loan.objects.all().delete()[0]
+            messages.success(request, f'Successfully deleted {count} loan records.')
+        except Exception as e:
+            messages.error(request, f'Error deleting loans: {str(e)}')
+        
+        return redirect('cooperatives:loan-list')

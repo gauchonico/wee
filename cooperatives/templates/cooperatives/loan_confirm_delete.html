@@ -1,0 +1,33 @@
+{% extends 'base.html' %}
+
+{% block title %}Delete Loan{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h2 class="card-title mb-0">Delete Loan</h2>
+                </div>
+                <div class="card-body">
+                    <p class="mb-4">Are you sure you want to delete the loan request for {{ object.member }}?</p>
+                    
+                    <div class="alert alert-warning">
+                        <h5 class="alert-heading">Warning!</h5>
+                        <p class="mb-0">This action cannot be undone. All loan information will be permanently deleted.</p>
+                    </div>
+
+                    <form method="post">
+                        {% csrf_token %}
+                        <div class="d-flex justify-content-between">
+                            <a href="{% url 'cooperatives:loan-list' %}" class="btn btn-secondary">Cancel</a>
+                            <button type="submit" class="btn btn-danger">Delete Loan</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

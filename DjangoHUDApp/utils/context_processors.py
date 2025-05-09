@@ -39,15 +39,33 @@ def sidebar_menu(request):
 			'action': 'Compose',
 			'text': 'Upload Collections',
 			'name': 'collection_bulk_upload'
-		}, {
-			'url': '/email/detail',
-			'action': 'Detail',
-			'text': 'Detail',
-			'name': 'emailDetail'
 		}]
-	}, {
-		'is_divider': 1
-	}, {
+	},{
+     
+     	'icon': 'bi bi-columns-gap',
+		'text': 'Loans',
+  		'children': [{
+			'url': '/cooperatives/loan-suppliers/',
+			'icon': 'bi bi-columns-gap',
+			'text': 'Loan Suppliers',
+			'name': 'loan-supplier-list'
+	},{
+		'url': '/cooperatives/credit-managers/',
+		'icon': 'bi bi-columns-gap',
+		'text': 'Credit Managers',
+		'name': 'credit-manager-list'
+	},{
+		'url': '/cooperatives/loans/',
+		'icon': 'bi bi-columns-gap',
+		'text': 'Loan Requests',
+		'name': 'loan-list'
+	},{
+		'url':'/cooperatives/loans/dashboard',
+		'icon': 'bi bi-columns-gap',
+		'text': 'Loan Dashboard',
+		'name': 'loan_dashboard'
+	}]
+ }, {
 		'text': 'Cooperatives',
 		'is_header': 1
 	}, {

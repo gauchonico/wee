@@ -1,0 +1,58 @@
+{% extends 'base.html' %}
+
+{% block title %}Loan Approval{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h2 class="card-title mb-0">Loan Approval</h2>
+                </div>
+                <div class="card-body">
+                    <!-- Loan Details -->
+                    <div class="mb-4">
+                        <h4>Loan Details</h4>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <p><strong>Member:</strong> {{ object.member }}</p>
+                                <p><strong>Cooperative:</strong> {{ object.cooperative.fpo_name }}</p>
+                                <p><strong>Request Date:</strong> {{ object.request_date }}</p>
+                                <p><strong>Request Amount:</strong> {{ object.request_amount }}</p>
+                            </div>
+                            <div class="col-md-6">
+                                <p><strong>National ID:</strong> {{ object.national_id }}</p>
+                                <p><strong>Phone Number:</strong> {{ object.phone_number }}</p>
+                                <p><strong>Loan Supplier:</strong> {{ object.loan_supplier }}</p>
+                                <p><strong>Current Status:</strong> {{ object.get_status_display }}</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Approval Form -->
+                    <form method="post">
+                        {% csrf_token %}
+                        
+                        {% for field in form %}
+                        <div class="mb-3">
+                            <label for="{{ field.id_for_label }}" class="form-label">{{ field.label }}</label>
+                            {{ field.errors }}
+                            {{ field }}
+                            {% if field.help_text %}
+                            <div class="form-text">{{ field.help_text }}</div>
+                            {% endif %}
+                        </div>
+                        {% endfor %}
+
+                        <div class="d-flex justify-content-between">
+                            <a href="{% url 'cooperatives:loan-list' %}" class="btn btn-secondary">Cancel</a>
+                            <button type="submit" class="btn btn-primary">Submit Decision</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

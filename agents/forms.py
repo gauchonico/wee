@@ -8,7 +8,7 @@ class AgentForm(forms.ModelForm):
         fields = [
             'agent_id', 'first_name', 'last_name', 'email',
             'gender', 'date_of_birth', 'phone_number',
-            'is_active', 'districts', 'farmer_groups'
+            'is_active', 'districts', 'farmer_groups','is_credit_manager'
         ]
         widgets = {
             'agent_id': forms.TextInput(attrs={'class': 'form-control'}),
@@ -21,6 +21,7 @@ class AgentForm(forms.ModelForm):
             'is_active': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
             'districts': forms.SelectMultiple(attrs={'class': 'form-control'}),
             'farmer_groups': forms.SelectMultiple(attrs={'class': 'form-control'}),
+            'is_credit_manager': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
         }
 
     def clean_phone_number(self):

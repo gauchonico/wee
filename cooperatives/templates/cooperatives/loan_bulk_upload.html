@@ -1,0 +1,53 @@
+{% extends 'base.html' %}
+
+{% block title %}Bulk Upload Loan Requests{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>Bulk Upload Loan Requests</h2>
+    
+    <div class="card">
+        <div class="card-body">
+            <form method="post" enctype="multipart/form-data">
+                {% csrf_token %}
+                
+                <div class="form-group">
+                    {{ form.csv_file.label_tag }}
+                    {{ form.csv_file }}
+                    {% if form.csv_file.errors %}
+                        <div class="alert alert-danger">
+                            {{ form.csv_file.errors }}
+                        </div>
+                    {% endif %}
+                    <small class="form-text text-muted">{{ form.csv_file.help_text }}</small>
+                </div>
+                
+                <button type="submit" class="btn btn-primary">Upload</button>
+            </form>
+        </div>
+    </div>
+    
+    <div class="card mt-4">
+        <div class="card-header">
+            <h4>CSV Format Instructions</h4>
+        </div>
+        <div class="card-body">
+            <p>Your CSV file should include the following columns:</p>
+            <ul>
+                <li><strong>member_id</strong> - The member ID of the member</li>
+                <li><strong>request_date</strong> - Date of the loan request (YYYY-MM-DD)</li>
+                <li><strong>amount_requested</strong> - Amount requested by the member</li>
+                <li><strong>amount_approved</strong> - Amount approved (can be empty)</li>
+                <li><strong>agent_id</strong> - ID of the agent processing the request</li>
+                <li><strong>status</strong> - Status of the loan (pending, approved, or rejected)</li>
+                <li><strong>date_of_birth</strong> - Member's date of birth (YYYY-MM-DD)</li>
+            </ul>
+            
+            <h5>Example CSV:</h5>
+            <pre>member_id,request_date,amount_requested,amount_approved,agent_id,status,date_of_birth
+123,2024-03-20,1000,1000,1,approved,1990-01-01
+124,2024-03-20,2000,,1,pending,1991-02-02</pre>
+        </div>
+    </div>
+</div>
+{% endblock %} 

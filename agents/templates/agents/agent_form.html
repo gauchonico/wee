@@ -183,6 +183,21 @@
                     </div>
                 </div>
             </div>
+            <div class="col-md-6">
+                <div class="mb-3">
+                    <label for="{{ form.is_credit_manager.id_for_label }}" class="form-label">Is Credit Manager</label>
+                    <div class="form-check form-switch">
+                        {{ form.is_credit_manager }}
+                    </div>
+                    {% if form.is_credit_manager.errors %}
+                    <div class="invalid-feedback d-block">
+                        {% for error in form.is_credit_manager.errors %}
+                        {{ error }}
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
 
             <div class="text-end">
                 <button type="submit" class="btn btn-primary">

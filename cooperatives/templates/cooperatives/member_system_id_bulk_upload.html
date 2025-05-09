@@ -1,0 +1,91 @@
+{% extends 'base.html' %}
+
+{% block title %}Bulk Update Member System IDs{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="h3 mb-0">Bulk Update Member System IDs</h1>
+        <a href="{% url 'cooperatives:member-list' %}" class="btn btn-secondary">
+            <i class="fas fa-arrow-left"></i> Back to Members
+        </a>
+    </div>
+
+    <div class="card shadow mb-4">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">Upload CSV File</h6>
+        </div>
+        <div class="card-body">
+            <div class="alert alert-info">
+                <h5><i class="fas fa-info-circle"></i> Instructions</h5>
+                <p>Please upload a CSV file with the following columns:</p>
+                <ul>
+                    <li><strong>member_id</strong> - The existing member ID</li>
+                    <li><strong>system_id</strong> - The new system ID to assign</li>
+                </ul>
+                <p>Example CSV format:</p>
+                <pre>member_id,system_id
+MEM001,SYS001
+MEM002,SYS002</pre>
+            </div>
+
+            <form method="post" enctype="multipart/form-data">
+                {% csrf_token %}
+                <div class="form-group">
+                    <label for="csv_file">Select CSV File</label>
+                    <input type="file" class="form-control-file" id="csv_file" name="csv_file" accept=".csv" required>
+                </div>
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-upload"></i> Upload and Update
+                </button>
+            </form>
+        </div>
+    </div>
+
+    {% if results %}
+    <div class="card shadow mb-4">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">Upload Results</h6>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-bordered" id="resultsTable" width="100%" cellspacing="0">
+                    <thead>
+                        <tr>
+                            <th>Member ID</th>
+                            <th>System ID</th>
+                            <th>Status</th>
+                            <th>Message</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for result in results %}
+                        <tr>
+                            <td>{{ result.member_id }}</td>
+                            <td>{{ result.system_id }}</td>
+                            <td>
+                                {% if result.success %}
+                                    <span class="badge badge-success">Success</span>
+                                {% else %}
+                                    <span class="badge badge-danger">Failed</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ result.message }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    $(document).ready(function() {
+        $('#resultsTable').DataTable();
+    });
+</script>
+{% endblock %} 

@@ -1,10 +1,14 @@
 from django import forms
 from .models import (
     District, County, SubCounty, Parish, Village, PaymentMode,
-    Cooperative, FarmerGroup, Member, Product, Price, Unit, Supplier, SupplierProduct, PlantingAllocation, Collection
+    Cooperative, FarmerGroup, Member, Product, Price, Unit, Supplier, SupplierProduct, PlantingAllocation, Collection, LoanSupplier, CreditManager, Loan,
 )
+
+from agents.models import Agent
 from django.core.exceptions import ValidationError
 from django.db import models
+from django.contrib.auth.models import User
+import csv
 
 class DistrictForm(forms.ModelForm):
     class Meta:
@@ -427,4 +431,134 @@ class CollectionBulkUploadForm(forms.Form):
         csv_file = self.cleaned_data['csv_file']
         if not csv_file.name.endswith('.csv'):
             raise forms.ValidationError('Please upload a CSV file')
+        return csv_file
+
+class LoanSupplierForm(forms.ModelForm):
+    class Meta:
+        model = LoanSupplier
+        fields = ['name', 'code', 'contact_person', 'phone_number', 'email', 'address', 'is_active']
+        widgets = {
+            'address': forms.Textarea(attrs={'rows': 3}),
+        }
+
+class CreditManagerForm(forms.ModelForm):
+    first_name = forms.CharField(max_length=150)
+    last_name = forms.CharField(max_length=150)
+    email = forms.EmailField()
+    password = forms.CharField(widget=forms.PasswordInput())
+
+    class Meta:
+        model = CreditManager
+        fields = ['phone_number', 'is_active']
+
+    def save(self, commit=True):
+        user = User.objects.create_user(
+            username=self.cleaned_data['email'],
+            email=self.cleaned_data['email'],
+            password=self.cleaned_data['password'],
+            first_name=self.cleaned_data['first_name'],
+            last_name=self.cleaned_data['last_name']
+        )
+        credit_manager = super().save(commit=False)
+        credit_manager.user = user
+        if commit:
+            credit_manager.save()
+        return credit_manager
+
+class LoanForm(forms.ModelForm):
+    class Meta:
+        model = Loan
+        fields = ['member', 'national_id', 'phone_number', 'cooperative', 'request_date', 
+                 'request_amount', 'credit_manager', 'loan_supplier', 'notes']
+        widgets = {
+            'request_date': forms.DateInput(attrs={'type': 'date'}),
+            'notes': forms.Textarea(attrs={'rows': 3}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Make member and cooperative read-only if they are pre-filled
+        if self.initial.get('member'):
+            self.fields['member'].widget.attrs['readonly'] = True
+            self.fields['member'].widget.attrs['class'] = 'form-control-plaintext'
+        if self.initial.get('cooperative'):
+            self.fields['cooperative'].widget.attrs['readonly'] = True
+            self.fields['cooperative'].widget.attrs['class'] = 'form-control-plaintext'
+        
+        # Add Bootstrap classes to all fields
+        for field_name, field in self.fields.items():
+            if not isinstance(field.widget, forms.CheckboxInput):
+                field.widget.attrs['class'] = 'form-control'
+            if field_name not in ['member', 'cooperative']:  # Don't add required to read-only fields
+                field.required = True
+
+        # Set the credit manager choices from the view
+        if 'credit_managers' in kwargs.get('initial', {}):
+            self.fields['credit_manager'].choices = kwargs['initial']['credit_managers']
+
+        self.fields['loan_supplier'].queryset = LoanSupplier.objects.all()
+
+    def clean(self):
+        cleaned_data = super().clean()
+        member = cleaned_data.get('member')
+        national_id = cleaned_data.get('national_id')
+        phone_number = cleaned_data.get('phone_number')
+
+        if member:
+            # Validate national ID matches member
+            if member.id_number != national_id:
+                raise forms.ValidationError("National ID does not match the selected member")
+            
+            # Validate phone number matches member
+            if member.phone_number != phone_number:
+                raise forms.ValidationError("Phone number does not match the selected member")
+
+        return cleaned_data
+
+class LoanApprovalForm(forms.ModelForm):
+    class Meta:
+        model = Loan
+        fields = ['status', 'approved_amount', 'credit_manager', 'notes']
+        widgets = {
+            'notes': forms.Textarea(attrs={'rows': 3}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Filter active credit managers
+        self.fields['credit_manager'].queryset = CreditManager.objects.filter(is_active=True)
+
+    def clean(self):
+        cleaned_data = super().clean()
+        status = cleaned_data.get('status')
+        approved_amount = cleaned_data.get('approved_amount')
+
+        if status in ['approved', 'disbursed'] and not approved_amount:
+            raise forms.ValidationError("Approved amount is required for approved or disbursed loans")
+
+        return cleaned_data
+
+class LoanBulkUploadForm(forms.Form):
+    csv_file = forms.FileField(
+        label='CSV File',
+        help_text='Upload a CSV file containing loan requests. The file must include the following columns: member_id, request_date, amount_requested, amount_approved, agent_id, status, date_of_birth'
+    )
+
+    def clean_csv_file(self):
+        csv_file = self.cleaned_data['csv_file']
+        if not csv_file.name.endswith('.csv'):
+            raise forms.ValidationError('File must be a CSV file')
+        
+        # Read the first line to check headers
+        decoded_file = csv_file.read().decode('utf-8')
+        csv_reader = csv.DictReader(decoded_file.splitlines())
+        
+        required_columns = ['member_id', 'request_date', 'amount_requested', 'amount_approved', 'agent_id', 'status', 'date_of_birth']
+        missing_columns = [col for col in required_columns if col not in csv_reader.fieldnames]
+        
+        if missing_columns:
+            raise forms.ValidationError(f'Missing required columns: {", ".join(missing_columns)}')
+        
+        # Reset file pointer for later use
+        csv_file.seek(0)
         return csv_file 
