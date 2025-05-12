@@ -4,25 +4,28 @@ from django.contrib.auth.decorators import login_required
 from django.urls import reverse, reverse_lazy
 from django.views.generic import ListView, DetailView, CreateView, UpdateView, DeleteView, View, TemplateView
 from django.contrib import messages
+from django.db.models import Q, Count, Sum, F
+from django.http import JsonResponse
+from django.db.models.functions import TruncMonth
+import json
 from .models import (
     District, County, SubCounty, Parish, Village, PaymentMode,
     Cooperative, FarmerGroup, Member, Product, Price, Unit, Supplier, SupplierProduct,
-    PlantingAllocation, Collection, LoanSupplier, CreditManager, Loan
+    PlantingAllocation, Collection, LoanSupplier, CreditManager, Loan, Sale, Store, Offtaker,
+    ThematicArea, Training
 )
-from agents.models import Agent
 from .forms import (
     DistrictForm, CountyForm, SubCountyForm, ParishForm, VillageForm, PaymentModeForm,
     CooperativeForm, FarmerGroupForm, MemberForm, ProductForm, PriceForm, UnitForm, CooperativeBulkUploadForm,
     ParishBulkUploadForm, VillageBulkUploadForm, SubCountyBulkUploadForm, CountyBulkUploadForm, DistrictBulkUploadForm,
     FarmerGroupBulkUploadForm, MemberBulkUploadForm, SunflowerAcreageBulkUploadForm, SupplierForm, SupplierProductBulkUploadForm,
     PlantingAllocationForm, CollectionForm, CollectionBulkUploadForm, LoanSupplierForm, CreditManagerForm, LoanForm, LoanApprovalForm,
-    LoanBulkUploadForm
+    LoanBulkUploadForm, OfftakerForm, SaleForm, ThematicAreaForm, TrainingForm
 )
 from .mixins import CustomLoginRequiredMixin
 import csv
 import io
 from datetime import datetime
-from django.db.models import Q, Count, Sum, F
 from django.views.generic.edit import FormView
 import random
 import json
@@ -40,6 +43,8 @@ from django.contrib.auth.models import User
 from django.db.models.functions import TruncMonth
 from django.http import JsonResponse
 from decimal import Decimal
+from django.db.models.signals import post_save, post_delete
+from django.dispatch import receiver
 # District Views
 class DistrictListView(CustomLoginRequiredMixin, ListView):
     model = District
@@ -2039,6 +2044,11 @@ class MemberCollectionUpdateView(CustomLoginRequiredMixin, UpdateView):
             kwargs['planting_allocation'] = self.object.planting_allocation
         return kwargs
     
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['member'] = self.object.member
+        return context
+    
     def form_valid(self, form):
         messages.success(self.request, 'Collection updated successfully.')
         return super().form_valid(form)
@@ -2271,6 +2281,47 @@ class PlantingAnalyticsView(TemplateView):
             }
         else:
             context['sunflower_price'] = None
+
+        # --- NEW: Top farmers by product based on collections ---
+        from django.db.models import Max
+        top_farmers_by_product = []
+        products = Product.objects.all()
+        for product in products:
+            top_collection = (
+                Collection.objects
+                .filter(product=product)
+                .values('id', 'member__id', 'member__first_name', 'member__surname', 'member__member_id', 'quantity', 'planting_allocation')
+                .annotate(total_value=Sum('total_price'))
+                .order_by('-total_value')
+                .first()
+            )
+            if top_collection:
+                # Get planting allocation details if available
+                planting_allocation = None
+                supplier_name = None
+                quantity_planted = None
+                acres_planted = None
+                if top_collection['planting_allocation']:
+                    try:
+                        allocation = PlantingAllocation.objects.get(pk=top_collection['planting_allocation'])
+                        acres_planted = allocation.allocated_acres
+                        quantity_planted = allocation.planting_quantity if hasattr(allocation, 'planting_quantity') else None
+                        supplier_name = allocation.supplier.name if allocation.supplier else None
+                    except PlantingAllocation.DoesNotExist:
+                        pass
+                top_farmers_by_product.append({
+                    'product': product,
+                    'member_id': top_collection['member__id'],
+                    'member_name': f"{top_collection['member__first_name']} {top_collection['member__surname']}",
+                    'member_code': top_collection['member__member_id'],
+                    'total_value': top_collection['total_value'],
+                    'collection_quantity': top_collection['quantity'],
+                    'acres_planted': acres_planted,
+                    'quantity_planted': quantity_planted,
+                    'supplier': supplier_name,
+                })
+        context['top_farmers_by_product'] = top_farmers_by_product
+        # --- END NEW ---
 
         return context
 
@@ -3241,3 +3292,407 @@ class CollectionDetailView(CustomLoginRequiredMixin, DetailView):
     model = Collection
     template_name = 'cooperatives/collection_detail.html'
     context_object_name = 'collection'
+
+@receiver(post_save, sender=Sale)
+def update_store_on_sale(sender, instance, created, **kwargs):
+    store, created = Store.objects.get_or_create(product=instance.product)
+    
+    if created:
+        # New sale - subtract from store
+        store.quantity -= instance.quantity
+    else:
+        # Updated sale - recalculate total
+        # Get all collections for this product
+        total_collections = Collection.objects.filter(product=instance.product).aggregate(
+            total=Sum('quantity'))['total'] or 0
+        # Get all sales for this product
+        total_sales = Sale.objects.filter(product=instance.product).aggregate(
+            total=Sum('quantity'))['total'] or 0
+        # Update store quantity
+        store.quantity = total_collections - total_sales
+    
+    store.save()
+
+@receiver(post_delete, sender=Sale)
+def update_store_on_sale_delete(sender, instance, **kwargs):
+    store = Store.objects.get(product=instance.product)
+    store.quantity += instance.quantity
+    store.save()
+
+# Offtaker Views
+class OfftakerListView(CustomLoginRequiredMixin, ListView):
+    model = Offtaker
+    template_name = 'cooperatives/offtaker_list.html'
+    context_object_name = 'offtakers'
+    ordering = ['name']
+
+class OfftakerDetailView(CustomLoginRequiredMixin, DetailView):
+    model = Offtaker
+    template_name = 'cooperatives/offtaker_detail.html'
+    context_object_name = 'offtaker'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['sales'] = self.object.sales.all().order_by('-created_at')
+        return context
+
+class OfftakerCreateView(CustomLoginRequiredMixin, CreateView):
+    model = Offtaker
+    form_class = OfftakerForm
+    template_name = 'cooperatives/offtaker_form.html'
+    success_url = reverse_lazy('cooperatives:offtaker-list')
+
+    def form_valid(self, form):
+        form.instance.created_by = self.request.user
+        return super().form_valid(form)
+
+class OfftakerUpdateView(CustomLoginRequiredMixin, UpdateView):
+    model = Offtaker
+    form_class = OfftakerForm
+    template_name = 'cooperatives/offtaker_form.html'
+    success_url = reverse_lazy('cooperatives:offtaker-list')
+
+class OfftakerDeleteView(CustomLoginRequiredMixin, DeleteView):
+    model = Offtaker
+    template_name = 'cooperatives/offtaker_confirm_delete.html'
+    success_url = reverse_lazy('cooperatives:offtaker-list')
+
+# Sale Views
+class SaleListView(CustomLoginRequiredMixin, ListView):
+    model = Sale
+    template_name = 'cooperatives/sale_list.html'
+    context_object_name = 'sales'
+    ordering = ['-created_at']
+    paginate_by = 50
+
+class SaleDetailView(CustomLoginRequiredMixin, DetailView):
+    model = Sale
+    template_name = 'cooperatives/sale_detail.html'
+    context_object_name = 'sale'
+
+class SaleCreateView(LoginRequiredMixin, CreateView):
+    model = Sale
+    form_class = SaleForm
+    template_name = 'cooperatives/sale_form.html'
+    success_url = reverse_lazy('cooperatives:sale-list')
+
+    def form_valid(self, form):
+        try:
+            form.instance.created_by = self.request.user
+            # Calculate total price
+            form.instance.total_price = form.instance.quantity * form.instance.unit_price
+            response = super().form_valid(form)
+            # Update store quantity
+            store = Store.objects.get(product=form.instance.product)
+            store.quantity -= form.instance.quantity
+            store.save()
+            return response
+        except Exception as e:
+            form.add_error(None, str(e))
+            return self.form_invalid(form)
+
+    def form_invalid(self, form):
+        # Add a non-field error to display at the top of the form
+        form.add_error(None, "Please correct the errors below.")
+        return super().form_invalid(form)
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['title'] = 'Create Sale'
+        return context
+
+class SaleUpdateView(CustomLoginRequiredMixin, UpdateView):
+    model = Sale
+    form_class = SaleForm
+    template_name = 'cooperatives/sale_form.html'
+    success_url = reverse_lazy('cooperatives:sale-list')
+
+    def form_valid(self, form):
+        try:
+            # Calculate total price
+            form.instance.total_price = form.instance.quantity * form.instance.unit_price
+            response = super().form_valid(form)
+            # Update store quantity
+            store = Store.objects.get(product=form.instance.product)
+            old_sale = Sale.objects.get(pk=self.object.pk)
+            store.quantity += old_sale.quantity  # Add back the old quantity
+            store.quantity -= form.instance.quantity  # Subtract the new quantity
+            store.save()
+            return response
+        except Exception as e:
+            form.add_error(None, str(e))
+            return self.form_invalid(form)
+
+    def form_invalid(self, form):
+        # Add a non-field error to display at the top of the form
+        form.add_error(None, "Please correct the errors below.")
+        return super().form_invalid(form)
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['title'] = 'Edit Sale'
+        return context
+
+class SaleDeleteView(CustomLoginRequiredMixin, DeleteView):
+    model = Sale
+    template_name = 'cooperatives/sale_confirm_delete.html'
+    success_url = reverse_lazy('cooperatives:sale-list')
+
+# Store Views
+class StoreListView(LoginRequiredMixin, ListView):
+    model = Store
+    template_name = 'cooperatives/store_list.html'
+    context_object_name = 'stores'
+
+    def get_queryset(self):
+        # Get all stores with their related products
+        return Store.objects.select_related('product').all()
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        
+        # Get all collections for the current month
+        today = timezone.now()
+        first_day = today.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+        last_day = (first_day + timezone.timedelta(days=32)).replace(day=1) - timezone.timedelta(days=1)
+        
+        collections = Collection.objects.filter(
+            collection_date__range=[first_day, last_day]
+        ).select_related('product', 'unit')
+        
+        # Group collections by product
+        product_collections = {}
+        for collection in collections:
+            if collection.product not in product_collections:
+                product_collections[collection.product] = []
+            product_collections[collection.product].append(collection)
+        
+        context['product_collections'] = product_collections
+        context['current_month'] = first_day.strftime('%B %Y')
+        
+        return context
+
+class StoreDetailView(CustomLoginRequiredMixin, DetailView):
+    model = Store
+    template_name = 'cooperatives/store_detail.html'
+    context_object_name = 'store'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['product'] = self.object.product
+        context['recent_sales'] = Sale.objects.filter(product=self.object.product).order_by('-created_at')[:5]
+        context['recent_collections'] = Collection.objects.filter(product=self.object.product).order_by('-created_at')[:5]
+        return context
+
+# Thematic Area Views
+class ThematicAreaListView(CustomLoginRequiredMixin, ListView):
+    model = ThematicArea
+    template_name = 'cooperatives/thematic_area_list.html'
+    context_object_name = 'thematic_areas'
+    ordering = ['name']
+
+class ThematicAreaDetailView(CustomLoginRequiredMixin, DetailView):
+    model = ThematicArea
+    template_name = 'cooperatives/thematic_area_detail.html'
+    context_object_name = 'thematic_area'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['trainings'] = self.object.trainings.all().order_by('-start_date')
+        return context
+
+class ThematicAreaCreateView(CustomLoginRequiredMixin, CreateView):
+    model = ThematicArea
+    form_class = ThematicAreaForm
+    template_name = 'cooperatives/thematic_area_form.html'
+    success_url = reverse_lazy('cooperatives:thematic-area-list')
+
+    def form_valid(self, form):
+        form.instance.created_by = self.request.user
+        messages.success(self.request, 'Thematic area created successfully.')
+        return super().form_valid(form)
+
+class ThematicAreaUpdateView(CustomLoginRequiredMixin, UpdateView):
+    model = ThematicArea
+    form_class = ThematicAreaForm
+    template_name = 'cooperatives/thematic_area_form.html'
+    success_url = reverse_lazy('cooperatives:thematic-area-list')
+
+    def form_valid(self, form):
+        messages.success(self.request, 'Thematic area updated successfully.')
+        return super().form_valid(form)
+
+class ThematicAreaDeleteView(CustomLoginRequiredMixin, DeleteView):
+    model = ThematicArea
+    template_name = 'cooperatives/thematic_area_confirm_delete.html'
+    success_url = reverse_lazy('cooperatives:thematic-area-list')
+
+    def delete(self, request, *args, **kwargs):
+        messages.success(request, 'Thematic area deleted successfully.')
+        return super().delete(request, *args, **kwargs)
+
+# Training Views
+class TrainingListView(CustomLoginRequiredMixin, ListView):
+    model = Training
+    template_name = 'cooperatives/training_list.html'
+    context_object_name = 'trainings'
+    ordering = ['-start_date']
+    paginate_by = 50
+
+    def get_queryset(self):
+        queryset = super().get_queryset()
+        status = self.request.GET.get('status')
+        cooperative_id = self.request.GET.get('cooperative')
+        thematic_area_id = self.request.GET.get('thematic_area')
+
+        if status:
+            queryset = queryset.filter(status=status)
+        if cooperative_id:
+            queryset = queryset.filter(cooperative_id=cooperative_id)
+        if thematic_area_id:
+            queryset = queryset.filter(thematic_area_id=thematic_area_id)
+
+        return queryset.select_related(
+            'thematic_area', 'trainer', 'cooperative'
+        ).prefetch_related('members')
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['cooperatives'] = Cooperative.objects.all()
+        context['thematic_areas'] = ThematicArea.objects.all()
+        context['status_choices'] = Training.STATUS_CHOICES
+        return context
+
+class TrainingDetailView(CustomLoginRequiredMixin, DetailView):
+    model = Training
+    template_name = 'cooperatives/training_detail.html'
+    context_object_name = 'training'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['member_count'] = self.object.members.count()
+        return context
+
+class TrainingCreateView(CustomLoginRequiredMixin, CreateView):
+    model = Training
+    form_class = TrainingForm
+    template_name = 'cooperatives/training_form.html'
+    success_url = reverse_lazy('cooperatives:training-list')
+
+    def form_valid(self, form):
+        form.instance.created_by = self.request.user
+        messages.success(self.request, 'Training created successfully.')
+        return super().form_valid(form)
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['title'] = 'Create Training'
+        return context
+
+class TrainingUpdateView(CustomLoginRequiredMixin, UpdateView):
+    model = Training
+    form_class = TrainingForm
+    template_name = 'cooperatives/training_form.html'
+    success_url = reverse_lazy('cooperatives:training-list')
+
+    def form_valid(self, form):
+        messages.success(self.request, 'Training updated successfully.')
+        return super().form_valid(form)
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['title'] = 'Edit Training'
+        return context
+
+class TrainingDeleteView(CustomLoginRequiredMixin, DeleteView):
+    model = Training
+    template_name = 'cooperatives/training_confirm_delete.html'
+    success_url = reverse_lazy('cooperatives:training-list')
+
+    def delete(self, request, *args, **kwargs):
+        messages.success(request, 'Training deleted successfully.')
+        return super().delete(request, *args, **kwargs)
+
+class TrainingDashboardView(CustomLoginRequiredMixin, TemplateView):
+    template_name = 'cooperatives/training_dashboard.html'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        
+        # Get total training statistics
+        total_trainings = Training.objects.count()
+        total_members_trained = Member.objects.filter(trainings__isnull=False).distinct().count()
+        
+        # Get status-wise statistics
+        status_stats = Training.objects.values('status').annotate(
+            count=Count('id'),
+            member_count=Count('members', distinct=True)
+        ).order_by('status')
+        
+        # Get thematic area statistics
+        thematic_area_stats = Training.objects.values(
+            'thematic_area__name'
+        ).annotate(
+            count=Count('id'),
+            member_count=Count('members', distinct=True)
+        ).order_by('-count')
+        
+        # Get trainer statistics
+        trainer_stats = Training.objects.values(
+            'trainer__user__first_name',
+            'trainer__user__last_name'
+        ).annotate(
+            count=Count('id'),
+            member_count=Count('members', distinct=True)
+        ).order_by('-count')[:10]
+        
+        # Get monthly training trends
+        monthly_trends = Training.objects.annotate(
+            month=TruncMonth('start_date')
+        ).values('month').annotate(
+            count=Count('id'),
+            member_count=Count('members', distinct=True)
+        ).order_by('month')
+        
+        # Prepare data for charts
+        status_labels = [dict(Training.STATUS_CHOICES)[stat['status']] for stat in status_stats]
+        status_counts = [stat['count'] for stat in status_stats]
+        status_members = [stat['member_count'] for stat in status_stats]
+        
+        monthly_labels = [trend['month'].strftime('%B %Y') for trend in monthly_trends]
+        monthly_counts = [trend['count'] for trend in monthly_trends]
+        monthly_members = [trend['member_count'] for trend in monthly_trends]
+        
+        context.update({
+            'total_trainings': total_trainings,
+            'total_members_trained': total_members_trained,
+            'status_stats': status_stats,
+            'thematic_area_stats': thematic_area_stats,
+            'trainer_stats': trainer_stats,
+            'monthly_trends': monthly_trends,
+            
+            # Chart data
+            'status_labels': json.dumps(status_labels),
+            'status_counts': json.dumps(status_counts),
+            'status_members': json.dumps(status_members),
+            'monthly_labels': json.dumps(monthly_labels),
+            'monthly_counts': json.dumps(monthly_counts),
+            'monthly_members': json.dumps(monthly_members),
+        })
+        
+        return context
+
+@login_required
+def get_cooperative_members(request, cooperative_id):
+    """API endpoint to get members of a cooperative."""
+    members = Member.objects.filter(
+        farmer_group__cooperative_id=cooperative_id
+    ).values('id', 'first_name', 'last_name', 'phone_number')
+    
+    members_list = [{
+        'id': member['id'],
+        'name': f"{member['first_name']} {member['last_name']}",
+        'phone': member['phone_number']
+    } for member in members]
+    
+    return JsonResponse(members_list, safe=False)

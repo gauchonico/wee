@@ -1,0 +1,116 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}
+    {% if form.instance.pk %}Edit Sale{% else %}New Sale{% endif %}
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="h3 mb-0 text-gray-800">
+            {% if form.instance.pk %}Edit Sale{% else %}New Sale{% endif %}
+        </h1>
+        <a href="{% url 'cooperatives:sale-list' %}" class="btn btn-secondary">
+            <i class="fas fa-arrow-left"></i> Back to List
+        </a>
+    </div>
+
+    <div class="card shadow mb-4">
+        <div class="card-body">
+            {% if form.non_field_errors %}
+            <div class="alert alert-danger">
+                {% for error in form.non_field_errors %}
+                    {{ error }}
+                {% endfor %}
+            </div>
+            {% endif %}
+
+            <form method="post" class="needs-validation" novalidate>
+                {% csrf_token %}
+                
+                <div class="form-group">
+                    <label for="{{ form.offtaker.id_for_label }}">Offtaker</label>
+                    {{ form.offtaker }}
+                    {% if form.offtaker.errors %}
+                        <div class="invalid-feedback d-block">
+                            {{ form.offtaker.errors }}
+                        </div>
+                    {% endif %}
+                </div>
+
+                <div class="form-group">
+                    <label for="{{ form.product.id_for_label }}">Product</label>
+                    {{ form.product }}
+                    {% if form.product.errors %}
+                        <div class="invalid-feedback d-block">
+                            {{ form.product.errors }}
+                        </div>
+                    {% endif %}
+                </div>
+
+                <div class="form-group">
+                    <label for="{{ form.quantity.id_for_label }}">Quantity</label>
+                    {{ form.quantity }}
+                    {% if form.quantity.errors %}
+                        <div class="invalid-feedback d-block">
+                            {{ form.quantity.errors }}
+                        </div>
+                    {% endif %}
+                </div>
+
+                <div class="form-group">
+                    <label for="{{ form.unit_price.id_for_label }}">Unit Price</label>
+                    {{ form.unit_price }}
+                    {% if form.unit_price.errors %}
+                        <div class="invalid-feedback d-block">
+                            {{ form.unit_price.errors }}
+                        </div>
+                    {% endif %}
+                </div>
+
+                <div class="form-group">
+                    <label for="{{ form.total_price.id_for_label }}">Total Price</label>
+                    {{ form.total_price }}
+                    {% if form.total_price.errors %}
+                        <div class="invalid-feedback d-block">
+                            {{ form.total_price.errors }}
+                        </div>
+                    {% endif %}
+                </div>
+
+                <div class="form-group">
+                    <button type="submit" class="btn btn-primary">
+                        {% if form.instance.pk %}Update{% else %}Create{% endif %} Sale
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    $(document).ready(function() {
+        // Calculate total price when quantity or unit price changes
+        function calculateTotal() {
+            var quantity = parseFloat($('#{{ form.quantity.id_for_label }}').val()) || 0;
+            var unitPrice = parseFloat($('#{{ form.unit_price.id_for_label }}').val()) || 0;
+            var total = quantity * unitPrice;
+            $('#{{ form.total_price.id_for_label }}').val(total.toFixed(2));
+        }
+
+        // Calculate total on page load
+        calculateTotal();
+
+        // Calculate total when quantity or unit price changes
+        $('#{{ form.quantity.id_for_label }}, #{{ form.unit_price.id_for_label }}').on('input', calculateTotal);
+
+        // Set initial value for total_price if it's empty
+        if (!$('#{{ form.total_price.id_for_label }}').val()) {
+            calculateTotal();
+        }
+    });
+</script>
+{% endblock %} 

@@ -1,6 +1,5 @@
 from django.db import models
 from django.contrib.auth.models import User
-from cooperatives.models import District, FarmerGroup
 from django.core.exceptions import ValidationError
 from django.utils import timezone
 
@@ -19,16 +18,16 @@ class Agent(models.Model):
     first_name = models.CharField(max_length=100)
     last_name = models.CharField(max_length=100)
     email = models.EmailField(unique=True, blank=True, null=True)
-    phone_number = models.CharField(max_length=15)
+    phone_number = models.CharField(max_length=20)
     gender = models.CharField(max_length=1, choices=GENDER_CHOICES)
     date_of_birth = models.DateField()
     date_joined = models.DateField(null=True, blank=True)
-    districts = models.ManyToManyField(District, blank=True)
-    farmer_groups = models.ManyToManyField(FarmerGroup, blank=True)
+    districts = models.ManyToManyField('cooperatives.District', blank=True)
+    farmer_groups = models.ManyToManyField('cooperatives.FarmerGroup', blank=True)
     is_active = models.BooleanField(default=True)
     is_credit_manager = models.BooleanField(default=False, help_text="Indicates if this agent can also act as a credit manager")
     farmers_profiled = models.IntegerField(default=0)
-    user = models.OneToOneField(User, on_delete=models.CASCADE)
+    user = models.OneToOneField(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='agent_profile')
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

@@ -2,6 +2,13 @@ from django.db import models
 from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
 from django.utils import timezone
+from django.db.models.signals import post_save, post_delete
+from django.dispatch import receiver
+from django.core.validators import MinValueValidator
+from decimal import Decimal
+import uuid
+
+from agents.models import Agent
 
 class Unit(models.Model):
     name = models.CharField(max_length=100)  # e.g. "Kilogram", "Piece", "Litre"
@@ -435,6 +442,32 @@ class Collection(models.Model):
         if self.planting_allocation and self.planting_allocation.product != self.product:
             raise ValidationError("Planting allocation product does not match collection product")
 
+@receiver(post_save, sender=Collection)
+def update_store_on_collection(sender, instance, created, **kwargs):
+    store, created = Store.objects.get_or_create(product=instance.product)
+    
+    if created:
+        # New collection - add to store
+        store.quantity += instance.quantity
+    else:
+        # Updated collection - recalculate total
+        # Get all collections for this product
+        total_collections = Collection.objects.filter(product=instance.product).aggregate(
+            total=models.Sum('quantity'))['total'] or 0
+        # Get all sales for this product
+        total_sales = Sale.objects.filter(product=instance.product).aggregate(
+            total=models.Sum('quantity'))['total'] or 0
+        # Update store quantity
+        store.quantity = total_collections - total_sales
+    
+    store.save()
+
+@receiver(post_delete, sender=Collection)
+def update_store_on_collection_delete(sender, instance, **kwargs):
+    store = Store.objects.get(product=instance.product)
+    store.quantity -= instance.quantity
+    store.save()
+
 class LoanSupplier(models.Model):
     name = models.CharField(max_length=255)
     code = models.CharField(max_length=50, unique=True)
@@ -497,5 +530,109 @@ class Loan(models.Model):
 
     class Meta:
         ordering = ['-request_date']
+
+class Offtaker(models.Model):
+    name = models.CharField(max_length=255)
+    address = models.TextField(blank=True)
+    phone_number = models.CharField(max_length=50, blank=True)
+
+    def __str__(self):
+        return self.name
+
+class Sale(models.Model):
+    offtaker = models.ForeignKey(Offtaker, on_delete=models.CASCADE, related_name='sales')
+    product = models.ForeignKey(Product, on_delete=models.CASCADE)
+    unit_price = models.DecimalField(max_digits=12, decimal_places=2)
+    quantity = models.DecimalField(max_digits=12, decimal_places=2)
+    total_price = models.DecimalField(max_digits=14, decimal_places=2)
+    created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.product.name} - {self.quantity} units to {self.offtaker.name}"
+
+    def save(self, *args, **kwargs):
+        # Calculate total price before saving
+        self.total_price = self.unit_price * self.quantity
+        super().save(*args, **kwargs)
+
+@receiver(post_save, sender=Sale)
+def update_store_on_sale(sender, instance, created, **kwargs):
+    """Update store quantity when a sale is created"""
+    if created:
+        store = Store.objects.get(product=instance.product)
+        store.quantity -= instance.quantity
+        store.save()
+
+@receiver(post_delete, sender=Sale)
+def update_store_on_sale_delete(sender, instance, **kwargs):
+    """Update store quantity when a sale is deleted"""
+    store = Store.objects.get(product=instance.product)
+    store.quantity += instance.quantity
+    store.save()
+
+class Store(models.Model):
+    product = models.OneToOneField(Product, on_delete=models.CASCADE, related_name='store')
+    quantity = models.DecimalField(max_digits=14, decimal_places=2, default=0)
+
+    def __str__(self):
+        return f"{self.product.name} store: {self.quantity}"
+
+class ThematicArea(models.Model):
+    name = models.CharField(max_length=100)
+    description = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
+
+    def __str__(self):
+        return self.name
+
+    class Meta:
+        ordering = ['name']
+
+class Training(models.Model):
+    STATUS_CHOICES = [
+        ('planned', 'Planned'),
+        ('ongoing', 'Ongoing'),
+        ('completed', 'Completed'),
+        ('cancelled', 'Cancelled'),
+    ]
+
+    thematic_area = models.ForeignKey(ThematicArea, on_delete=models.CASCADE, related_name='trainings')
+    trainer = models.ForeignKey(Agent, on_delete=models.SET_NULL, null=True, related_name='trainings')
+    topic = models.CharField(max_length=200)
+    description = models.TextField()
+    cooperative = models.ForeignKey(Cooperative, on_delete=models.CASCADE, related_name='trainings')
+    members = models.ManyToManyField(Member, related_name='trainings')
+    gps_location = models.CharField(max_length=100, help_text="GPS coordinates of training location")
+    start_date = models.DateTimeField()
+    end_date = models.DateTimeField()
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='planned')
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
+
+    def __str__(self):
+        return f"{self.topic} - {self.cooperative.fpo_name}"
+
+    class Meta:
+        ordering = ['-start_date']
+
+    def clean(self):
+        if self.start_date and self.end_date and self.start_date >= self.end_date:
+            raise ValidationError("End date must be after start date")
+
+    def save(self, *args, **kwargs):
+        # Update status based on dates
+        now = timezone.now()
+        if self.status != 'cancelled':
+            if now < self.start_date:
+                self.status = 'planned'
+            elif self.start_date <= now <= self.end_date:
+                self.status = 'ongoing'
+            else:
+                self.status = 'completed'
+        super().save(*args, **kwargs)
 
 

@@ -1,4 +1,7 @@
 {% extends 'base.html' %}
+{% load static %}
+{% load humanize %}
+
 
 {% block page_title %}
     Collections - {{ member }}
@@ -20,7 +23,7 @@
                         {% endif %}
                     </h3>
                     <div class="card-tools">
-                        <a href="{% url 'cooperatives:member-collection-create' member.pk %}{% if planting_allocation %}?planting={{ planting_allocation.pk }}{% endif %}" class="btn btn-primary btn-sm">
+                        <a href="{% url 'cooperatives:member-collection-create' member.pk %}{% if planting_allocation %}?planting={{ planting_allocation.pk }}{% endif %}" class="btn btn-theme btn-sm">
                             <i class="bi bi-plus-circle"></i> Add Collection
                         </a>
                         <a href="{% url 'cooperatives:member-planting-list' member.pk %}" class="btn btn-secondary btn-sm">
@@ -43,18 +46,18 @@
 
                     <div class="row mb-4">
                         <div class="col-md-6">
-                            <div class="card bg-primary text-white">
+                            <div class="card bg-theme border-theme bg-opacity-25">
                                 <div class="card-body">
                                     <h5 class="card-title">Total Quantity</h5>
-                                    <p class="card-text display-4">{{ total_quantity|floatformat:2 }}</p>
+                                    <p class="card-text fs-55px">{{ total_quantity|floatformat:2 }}</p>
                                 </div>
                             </div>
                         </div>
                         <div class="col-md-6">
-                            <div class="card bg-success text-white">
+                            <div class="card bg-indigo border-theme bg-opacity-25">
                                 <div class="card-body">
-                                    <h5 class="card-title">Total Value</h5>
-                                    <p class="card-text display-4">{{ total_value|floatformat:2 }}</p>
+                                    <h5 class="card-title">Total Value(UGX)</h5>
+                                    <p class="card-text fs-55px">{{ total_value|floatformat:0|intcomma }}</p>
                                 </div>
                             </div>
                         </div>

@@ -1,0 +1,130 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Store Details - {{ store.product.name }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="h3 mb-0">Store Details - {{ store.product.name }}</h1>
+        <a href="{% url 'cooperatives:store-list' %}" class="btn btn-secondary">
+            <i class="fas fa-arrow-left"></i> Back to List
+        </a>
+    </div>
+
+    <div class="row">
+        <!-- Product Summary Card -->
+        <div class="col-xl-4">
+            <div class="card border-0 shadow mb-4">
+                <div class="card-header bg-teal-800">
+                    <h6 class="m-0 font-weight-bold text-white">Product Summary</h6>
+                </div>
+                <div class="card-body">
+                    <dl class="row">
+                        <dt class="col-sm-4">Product:</dt>
+                        <dd class="col-sm-8">{{ store.product.name }}</dd>
+
+                        <dt class="col-sm-4">Current Stock:</dt>
+                        <dd class="col-sm-8">{{ store.quantity }} {{ store.product.unit.name }}</dd>
+
+                        <dt class="col-sm-4">Unit:</dt>
+                        <dd class="col-sm-8">{{ store.product.unit.name }}</dd>
+
+                        <dt class="col-sm-4">Total Collections:</dt>
+                        <dd class="col-sm-8">{{ store.product.collection_set.count }}</dd>
+
+                        <dt class="col-sm-4">Total Sales:</dt>
+                        <dd class="col-sm-8">{{ store.product.sale_set.count }}</dd>
+                    </dl>
+                </div>
+            </div>
+        </div>
+
+        <!-- Recent Collections Card -->
+        <div class="col-xl-8">
+            <div class="card border-0 shadow mb-4">
+                <div class="card-header bg-teal-800">
+                    <h6 class="m-0 font-weight-bold text-white">Recent Collections</h6>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-bordered" width="100%" cellspacing="0">
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Member</th>
+                                    <th>Quantity</th>
+                                    <th>Unit Price</th>
+                                    <th>Total Price</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for collection in store.product.collection_set.all|slice:":10" %}
+                                <tr>
+                                    <td>{{ collection.created_at|date:"Y-m-d" }}</td>
+                                    <td>
+                                        <a href="{% url 'cooperatives:member-detail' collection.member.pk %}">
+                                            {{ collection.member.get_full_name }}
+                                        </a>
+                                    </td>
+                                    <td>{{ collection.quantity }}</td>
+                                    <td>{{ collection.unit_price }}</td>
+                                    <td>{{ collection.total_price }}</td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="5" class="text-center">No collections found.</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Recent Sales Card -->
+        <div class="col-xl-12">
+            <div class="card border-0 shadow mb-4">
+                <div class="card-header bg-teal-800">
+                    <h6 class="m-0 font-weight-bold text-white">Recent Sales</h6>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-bordered" width="100%" cellspacing="0">
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Offtaker</th>
+                                    <th>Quantity</th>
+                                    <th>Unit Price</th>
+                                    <th>Total Price</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for sale in store.product.sale_set.all|slice:":10" %}
+                                <tr>
+                                    <td>{{ sale.created_at|date:"Y-m-d" }}</td>
+                                    <td>
+                                        <a href="{% url 'cooperatives:offtaker-detail' sale.offtaker.pk %}">
+                                            {{ sale.offtaker.name }}
+                                        </a>
+                                    </td>
+                                    <td>{{ sale.quantity }}</td>
+                                    <td>{{ sale.unit_price }}</td>
+                                    <td>{{ sale.total_price }}</td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="5" class="text-center">No sales found.</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

@@ -1,0 +1,75 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Sale Details{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="h3 mb-0 text-gray-800">Sale Details</h1>
+        <div>
+            <a href="{% url 'cooperatives:sale-update' sale.pk %}" class="btn btn-warning">
+                <i class="fas fa-edit"></i> Edit
+            </a>
+            <a href="{% url 'cooperatives:sale-delete' sale.pk %}" class="btn btn-danger">
+                <i class="fas fa-trash"></i> Delete
+            </a>
+            <a href="{% url 'cooperatives:sale-list' %}" class="btn btn-secondary">
+                <i class="fas fa-arrow-left"></i> Back to List
+            </a>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-xl-6">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Sale Information</h6>
+                </div>
+                <div class="card-body">
+                    <dl class="row">
+                        <dt class="col-sm-3">Date:</dt>
+                        <dd class="col-sm-9">{{ sale.created_at|date:"Y-m-d H:i" }}</dd>
+
+                        <dt class="col-sm-3">Offtaker:</dt>
+                        <dd class="col-sm-9">
+                            <a href="{% url 'cooperatives:offtaker-detail' sale.offtaker.pk %}">
+                                {{ sale.offtaker.name }}
+                            </a>
+                        </dd>
+
+                        <dt class="col-sm-3">Product:</dt>
+                        <dd class="col-sm-9">{{ sale.product.name }}</dd>
+
+                        <dt class="col-sm-3">Quantity:</dt>
+                        <dd class="col-sm-9">{{ sale.quantity }}</dd>
+
+                        <dt class="col-sm-3">Unit Price:</dt>
+                        <dd class="col-sm-9">{{ sale.unit_price }}</dd>
+
+                        <dt class="col-sm-3">Total Price:</dt>
+                        <dd class="col-sm-9">{{ sale.total_price }}</dd>
+
+                        <dt class="col-sm-3">Created By:</dt>
+                        <dd class="col-sm-9">{{ sale.created_by.get_full_name|default:sale.created_by.username }}</dd>
+                    </dl>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-6">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Product Stock</h6>
+                </div>
+                <div class="card-body">
+                    <dl class="row">
+                        <dt class="col-sm-3">Current Stock:</dt>
+                        <dd class="col-sm-9">{{ sale.product.store.quantity }}</dd>
+                    </dl>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

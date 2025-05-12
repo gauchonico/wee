@@ -2,7 +2,7 @@
 
 {% load static %}
 
-{% comment %} {% load humanize %} {% endcomment %}
+{% load humanize %}
 {% block title %}Planting Analytics{% endblock %}
 
 {% block content %}
@@ -132,7 +132,7 @@
         <div class="col-12">
             <div class="card border-0 shadow mb-4">
                 <div class="card-header py-3">
-                    <h6 class="m-0 font-weight-bold">Top Shea Tree Farmer</h6>
+                    <h6 class="m-0 font-weight-bold">Top Tree Planter</h6>
                 </div>
                 <div class="card-body">
                     <div class="row">
@@ -144,6 +144,52 @@
                             <h2 class="text-theme">{{ top_shea_member.trees }}</h2>
                             <p class="">Shea Trees</p>
                         </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Top Farmers by Product (Collections) -->
+    {% if top_farmers_by_product %}
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card border-0 shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold">Top Farmers by Product (Collections)</h6>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        {% for top in top_farmers_by_product %}
+                        <div class="col-md-4 mb-3">
+                            <div class="card h-100 border-0 shadow-sm">
+                                <div class="card-body">
+                                    <div class="d-flex justify-content-between align-items-center mb-2">
+                                        <span class="badge bg-teal-800 text-white">{{ top.product.name }}</span>
+                                        <a href="{% url 'cooperatives:member-collection-list' top.member_id %}" class="text-theme" title="View Collections">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
+                                    </div>
+                                    <h5 class="card-title mb-1">{{ top.member_name }}</h5>
+                                    <div class="text-muted mb-2">ID: {{ top.member_code }}</div>
+                                    <div class="fs-5 text-theme">UGX {{ top.total_value|floatformat:0|intcomma }}</div>
+                                    <div class="text-muted">Total Value Collected</div>
+                                    <hr>
+                                    <div class="mb-1"><strong>Collection Quantity:</strong> {{ top.collection_quantity }}</div>
+                                    {% if top.acres_planted %}
+                                    <div class="mb-1"><strong>Acres Planted:</strong> {{ top.acres_planted|floatformat:2 }}</div>
+                                    {% endif %}
+                                    {% if top.quantity_planted %}
+                                    <div class="mb-1"><strong>Quantity Planted:</strong> {{ top.quantity_planted }}</div>
+                                    {% endif %}
+                                    {% if top.supplier %}
+                                    <div class="mb-1"><strong>Supplier:</strong> {{ top.supplier }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
                     </div>
                 </div>
             </div>

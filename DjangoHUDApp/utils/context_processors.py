@@ -17,11 +17,16 @@ def sidebar_menu(request):
 		'text': 'Navigation',
 		'is_header': 1
 	},{
-		'url': '/',
+		'url': '/cooperatives/offtakers/',
 		'icon': 'bi bi-cpu',
-		'text': 'Dashboard',
-		'name': 'index'
-	}, {
+		'text': 'Offtakers',
+		'name': 'offtaker-list'
+	},{
+		'url': '/cooperatives/sales/',
+		'icon': 'bi bi-cpu',
+		'text': 'Sales',
+		'name': 'sale-list'
+     },{
 		'url': '/cooperatives/planting-analytics',
 		'icon': 'bi bi-bar-chart',
 		'text': 'Land Analytics',
@@ -40,6 +45,11 @@ def sidebar_menu(request):
 			'text': 'Upload Collections',
 			'name': 'collection_bulk_upload'
 		}]
+	},{
+		'url': '/cooperatives/store/',
+		'icon': 'bi bi-columns-gap',
+		'text': 'Store',
+		'name': 'store-list'
 	},{
      
      	'icon': 'bi bi-columns-gap',
@@ -65,7 +75,21 @@ def sidebar_menu(request):
 		'text': 'Loan Dashboard',
 		'name': 'loan_dashboard'
 	}]
- }, {
+ },{
+	'icon': 'bi bi-columns-gap',
+	'text':'Training Center',	
+	'children': [{
+		'url':'/cooperatives/trainings/',
+		'icon': 'bi bi-columns-gap',
+		'text': 'Trainings',
+		'name': 'training-list'
+	},{
+		'url':'/cooperatives/thematic-areas/',
+		'icon': 'bi bi-columns-gap',
+		'text': 'Thematic Areas',
+		'name': 'thematic-area-list'
+	}]
+ },{
 		'text': 'Cooperatives',
 		'is_header': 1
 	}, {

@@ -1,0 +1,63 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Thematic Areas{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">Thematic Areas</h3>
+                    <div class="card-tools">
+                        <a href="{% url 'cooperatives:thematic-area-create' %}" class="btn btn-primary btn-sm">
+                            <i class="fas fa-plus"></i> New Thematic Area
+                        </a>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-bordered table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Name</th>
+                                    <th>Description</th>
+                                    <th>Trainings</th>
+                                    <th>Created</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for area in thematic_areas %}
+                                <tr>
+                                    <td>{{ area.name }}</td>
+                                    <td>{{ area.description|truncatewords:30 }}</td>
+                                    <td>{{ area.trainings.count }}</td>
+                                    <td>{{ area.created_at|date:"M d, Y" }}</td>
+                                    <td>
+                                        <a href="{% url 'cooperatives:thematic-area-detail' area.pk %}" class="btn btn-info btn-sm">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
+                                        <a href="{% url 'cooperatives:thematic-area-update' area.pk %}" class="btn btn-warning btn-sm">
+                                            <i class="fas fa-edit"></i>
+                                        </a>
+                                        <a href="{% url 'cooperatives:thematic-area-delete' area.pk %}" class="btn btn-danger btn-sm">
+                                            <i class="fas fa-trash"></i>
+                                        </a>
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="5" class="text-center">No thematic areas found.</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

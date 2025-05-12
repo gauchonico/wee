@@ -1,7 +1,7 @@
 from django import forms
 from .models import (
     District, County, SubCounty, Parish, Village, PaymentMode,
-    Cooperative, FarmerGroup, Member, Product, Price, Unit, Supplier, SupplierProduct, PlantingAllocation, Collection, LoanSupplier, CreditManager, Loan,
+    Cooperative, FarmerGroup, Member, Product, Price, Unit, Supplier, SupplierProduct, PlantingAllocation, Collection, LoanSupplier, CreditManager, Loan, Offtaker, Sale, Store, ThematicArea, Training
 )
 
 from agents.models import Agent
@@ -561,4 +561,107 @@ class LoanBulkUploadForm(forms.Form):
         
         # Reset file pointer for later use
         csv_file.seek(0)
-        return csv_file 
+        return csv_file
+
+class OfftakerForm(forms.ModelForm):
+    class Meta:
+        model = Offtaker
+        fields = ['name', 'address', 'phone_number']
+
+class SaleForm(forms.ModelForm):
+    class Meta:
+        model = Sale
+        fields = ['offtaker', 'product', 'unit_price', 'quantity', 'total_price']
+        widgets = {
+            'offtaker': forms.Select(attrs={'class': 'form-control'}),
+            'product': forms.Select(attrs={'class': 'form-control'}),
+            'unit_price': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
+            'quantity': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
+            'total_price': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01', 'readonly': 'readonly'}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Filter products to only show those available in store
+        self.fields['product'].queryset = Product.objects.filter(store__quantity__gt=0)
+        # Make total_price not required since we calculate it
+        self.fields['total_price'].required = False
+
+    def clean(self):
+        cleaned_data = super().clean()
+        product = cleaned_data.get('product')
+        quantity = cleaned_data.get('quantity')
+        unit_price = cleaned_data.get('unit_price')
+
+        if product and quantity and unit_price:
+            # Check if there's enough quantity in store
+            store = Store.objects.filter(product=product).first()
+            if not store:
+                raise forms.ValidationError("Selected product is not available in store")
+            if store.quantity < quantity:
+                raise forms.ValidationError(f"Not enough quantity in store. Available: {store.quantity}")
+            
+            # Calculate total price
+            cleaned_data['total_price'] = quantity * unit_price
+
+        return cleaned_data
+
+    def save(self, commit=True):
+        instance = super().save(commit=False)
+        # Calculate total price before saving
+        if instance.quantity and instance.unit_price:
+            instance.total_price = instance.quantity * instance.unit_price
+        if commit:
+            instance.save()
+        return instance
+
+class StoreForm(forms.ModelForm):
+    class Meta:
+        model = Store
+        fields = ['product', 'quantity']
+
+class ThematicAreaForm(forms.ModelForm):
+    class Meta:
+        model = ThematicArea
+        fields = ['name', 'description']
+        widgets = {
+            'description': forms.Textarea(attrs={'rows': 4}),
+        }
+
+class TrainingForm(forms.ModelForm):
+    class Meta:
+        model = Training
+        fields = [
+            'thematic_area', 'trainer', 'topic', 'description',
+            'cooperative', 'members', 'gps_location', 'start_date', 'end_date'
+        ]
+        widgets = {
+            'description': forms.Textarea(attrs={'rows': 4}),
+            'start_date': forms.DateTimeInput(attrs={'type': 'datetime-local'}),
+            'end_date': forms.DateTimeInput(attrs={'type': 'datetime-local'}),
+            'members': forms.SelectMultiple(attrs={'class': 'select2'}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Filter members based on the selected cooperative
+        if 'cooperative' in self.data:
+            try:
+                cooperative_id = int(self.data.get('cooperative'))
+                self.fields['members'].queryset = Member.objects.filter(cooperative_id=cooperative_id)
+            except (ValueError, TypeError):
+                pass
+        elif self.instance.pk and self.instance.cooperative:
+            self.fields['members'].queryset = Member.objects.filter(cooperative=self.instance.cooperative)
+        else:
+            self.fields['members'].queryset = Member.objects.none()
+
+    def clean(self):
+        cleaned_data = super().clean()
+        start_date = cleaned_data.get('start_date')
+        end_date = cleaned_data.get('end_date')
+
+        if start_date and end_date and start_date >= end_date:
+            raise forms.ValidationError("End date must be after start date")
+
+        return cleaned_data 

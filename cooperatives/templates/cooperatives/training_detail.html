@@ -1,0 +1,101 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ training.topic }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">{{ training.topic }}</h3>
+                    <div class="card-tools">
+                        <a href="{% url 'cooperatives:training-update' training.pk %}" class="btn btn-warning btn-sm">
+                            <i class="fas fa-edit"></i> Edit
+                        </a>
+                        <a href="{% url 'cooperatives:training-delete' training.pk %}" class="btn btn-danger btn-sm">
+                            <i class="fas fa-trash"></i> Delete
+                        </a>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <dl class="row">
+                                <dt class="col-sm-4">Topic</dt>
+                                <dd class="col-sm-8">{{ training.topic }}</dd>
+
+                                <dt class="col-sm-4">Thematic Area</dt>
+                                <dd class="col-sm-8">{{ training.thematic_area.name }}</dd>
+
+                                <dt class="col-sm-4">Trainer</dt>
+                                <dd class="col-sm-8">{{ training.trainer.get_full_name }}</dd>
+
+                                <dt class="col-sm-4">Cooperative</dt>
+                                <dd class="col-sm-8">{{ training.cooperative.name }}</dd>
+
+                                <dt class="col-sm-4">Description</dt>
+                                <dd class="col-sm-8">{{ training.description }}</dd>
+
+                                <dt class="col-sm-4">GPS Location</dt>
+                                <dd class="col-sm-8">{{ training.gps_location }}</dd>
+
+                                <dt class="col-sm-4">Start Date</dt>
+                                <dd class="col-sm-8">{{ training.start_date|date:"F d, Y H:i" }}</dd>
+
+                                <dt class="col-sm-4">End Date</dt>
+                                <dd class="col-sm-8">{{ training.end_date|date:"F d, Y H:i" }}</dd>
+
+                                <dt class="col-sm-4">Status</dt>
+                                <dd class="col-sm-8">
+                                    <span class="badge badge-{{ training.status|lower }}">
+                                        {{ training.get_status_display }}
+                                    </span>
+                                </dd>
+
+                                <dt class="col-sm-4">Created By</dt>
+                                <dd class="col-sm-8">{{ training.created_by.get_full_name }}</dd>
+
+                                <dt class="col-sm-4">Created At</dt>
+                                <dd class="col-sm-8">{{ training.created_at|date:"F d, Y H:i" }}</dd>
+
+                                <dt class="col-sm-4">Last Updated</dt>
+                                <dd class="col-sm-8">{{ training.updated_at|date:"F d, Y H:i" }}</dd>
+                            </dl>
+                        </div>
+                    </div>
+
+                    <h4 class="mt-4">Training Members ({{ member_count }})</h4>
+                    <div class="table-responsive">
+                        <table class="table table-bordered table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Name</th>
+                                    <th>Phone</th>
+                                    <th>Farmer Group</th>
+                                    <th>Village</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for member in training.members.all %}
+                                <tr>
+                                    <td>{{ member.get_full_name }}</td>
+                                    <td>{{ member.phone_number }}</td>
+                                    <td>{{ member.farmer_group.name }}</td>
+                                    <td>{{ member.village.name }}</td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="4" class="text-center">No members assigned to this training.</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

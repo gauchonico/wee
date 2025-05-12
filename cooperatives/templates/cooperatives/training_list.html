@@ -1,0 +1,160 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Trainings{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">Trainings</h3>
+                    <div class="card-tools">
+                        <a href="{% url 'cooperatives:training-create' %}" class="btn btn-primary btn-sm">
+                            <i class="fas fa-plus"></i> New Training
+                        </a>
+                        <a href="{% url 'cooperatives:training-dashboard' %}" class="btn btn-info btn-sm">
+                            <i class="fas fa-chart-bar"></i> Dashboard
+                        </a>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <!-- Filters -->
+                    <form method="get" class="mb-4">
+                        <div class="row">
+                            <div class="col-md-3">
+                                <div class="form-group">
+                                    <label for="status">Status</label>
+                                    <select name="status" id="status" class="form-control">
+                                        <option value="">All</option>
+                                        {% for status, label in status_choices %}
+                                        <option value="{{ status }}" {% if request.GET.status == status %}selected{% endif %}>
+                                            {{ label }}
+                                        </option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="form-group">
+                                    <label for="cooperative">Cooperative</label>
+                                    <select name="cooperative" id="cooperative" class="form-control">
+                                        <option value="">All</option>
+                                        {% for coop in cooperatives %}
+                                        <option value="{{ coop.id }}" {% if request.GET.cooperative == coop.id|stringformat:"i" %}selected{% endif %}>
+                                            {{ coop.name }}
+                                        </option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="form-group">
+                                    <label for="thematic_area">Thematic Area</label>
+                                    <select name="thematic_area" id="thematic_area" class="form-control">
+                                        <option value="">All</option>
+                                        {% for area in thematic_areas %}
+                                        <option value="{{ area.id }}" {% if request.GET.thematic_area == area.id|stringformat:"i" %}selected{% endif %}>
+                                            {{ area.name }}
+                                        </option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="form-group">
+                                    <label>&nbsp;</label>
+                                    <button type="submit" class="btn btn-primary btn-block">Filter</button>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+
+                    <div class="table-responsive">
+                        <table class="table table-bordered table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Topic</th>
+                                    <th>Thematic Area</th>
+                                    <th>Trainer</th>
+                                    <th>Cooperative</th>
+                                    <th>Start Date</th>
+                                    <th>End Date</th>
+                                    <th>Status</th>
+                                    <th>Members</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for training in trainings %}
+                                <tr>
+                                    <td>{{ training.topic }}</td>
+                                    <td>{{ training.thematic_area.name }}</td>
+                                    <td>{{ training.trainer.get_full_name }}</td>
+                                    <td>{{ training.cooperative.name }}</td>
+                                    <td>{{ training.start_date|date:"M d, Y H:i" }}</td>
+                                    <td>{{ training.end_date|date:"M d, Y H:i" }}</td>
+                                    <td>
+                                        <span class="badge badge-{{ training.status|lower }}">
+                                            {{ training.get_status_display }}
+                                        </span>
+                                    </td>
+                                    <td>{{ training.members.count }}</td>
+                                    <td>
+                                        <a href="{% url 'cooperatives:training-detail' training.pk %}" class="btn btn-info btn-sm">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
+                                        <a href="{% url 'cooperatives:training-update' training.pk %}" class="btn btn-warning btn-sm">
+                                            <i class="fas fa-edit"></i>
+                                        </a>
+                                        <a href="{% url 'cooperatives:training-delete' training.pk %}" class="btn btn-danger btn-sm">
+                                            <i class="fas fa-trash"></i>
+                                        </a>
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="9" class="text-center">No trainings found.</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    {% if is_paginated %}
+                    <div class="pagination justify-content-center mt-4">
+                        <span class="step-links">
+                            {% if page_obj.has_previous %}
+                            <a href="?page=1{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.cooperative %}&cooperative={{ request.GET.cooperative }}{% endif %}{% if request.GET.thematic_area %}&thematic_area={{ request.GET.thematic_area }}{% endif %}" class="btn btn-sm btn-outline-primary">&laquo; first</a>
+                            <a href="?page={{ page_obj.previous_page_number }}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.cooperative %}&cooperative={{ request.GET.cooperative }}{% endif %}{% if request.GET.thematic_area %}&thematic_area={{ request.GET.thematic_area }}{% endif %}" class="btn btn-sm btn-outline-primary">previous</a>
+                            {% endif %}
+
+                            <span class="current">
+                                Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
+                            </span>
+
+                            {% if page_obj.has_next %}
+                            <a href="?page={{ page_obj.next_page_number }}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.cooperative %}&cooperative={{ request.GET.cooperative }}{% endif %}{% if request.GET.thematic_area %}&thematic_area={{ request.GET.thematic_area }}{% endif %}" class="btn btn-sm btn-outline-primary">next</a>
+                            <a href="?page={{ page_obj.paginator.num_pages }}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.cooperative %}&cooperative={{ request.GET.cooperative }}{% endif %}{% if request.GET.thematic_area %}&thematic_area={{ request.GET.thematic_area }}{% endif %}" class="btn btn-sm btn-outline-primary">last &raquo;</a>
+                            {% endif %}
+                        </span>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    $(document).ready(function() {
+        // Initialize select2 for dropdowns
+        $('#status, #cooperative, #thematic_area').select2({
+            theme: 'bootstrap4'
+        });
+    });
+</script>
+{% endblock %} 

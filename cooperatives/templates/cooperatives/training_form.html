@@ -1,0 +1,162 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}
+    {% if form.instance.pk %}Edit{% else %}Create{% endif %} Training
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">
+                        {% if form.instance.pk %}Edit{% else %}Create{% endif %} Training
+                    </h3>
+                </div>
+                <div class="card-body">
+                    <form method="post">
+                        {% csrf_token %}
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="{{ form.thematic_area.id_for_label }}">Thematic Area</label>
+                                    {{ form.thematic_area }}
+                                    {% if form.thematic_area.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {{ form.thematic_area.errors }}
+                                    </div>
+                                    {% endif %}
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="{{ form.trainer.id_for_label }}">Trainer</label>
+                                    {{ form.trainer }}
+                                    {% if form.trainer.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {{ form.trainer.errors }}
+                                    </div>
+                                    {% endif %}
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="{{ form.topic.id_for_label }}">Topic</label>
+                                    {{ form.topic }}
+                                    {% if form.topic.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {{ form.topic.errors }}
+                                    </div>
+                                    {% endif %}
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="{{ form.description.id_for_label }}">Description</label>
+                                    {{ form.description }}
+                                    {% if form.description.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {{ form.description.errors }}
+                                    </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="{{ form.cooperative.id_for_label }}">Cooperative</label>
+                                    {{ form.cooperative }}
+                                    {% if form.cooperative.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {{ form.cooperative.errors }}
+                                    </div>
+                                    {% endif %}
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="{{ form.members.id_for_label }}">Members</label>
+                                    {{ form.members }}
+                                    {% if form.members.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {{ form.members.errors }}
+                                    </div>
+                                    {% endif %}
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="{{ form.gps_location.id_for_label }}">GPS Location</label>
+                                    {{ form.gps_location }}
+                                    {% if form.gps_location.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {{ form.gps_location.errors }}
+                                    </div>
+                                    {% endif %}
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="{{ form.start_date.id_for_label }}">Start Date</label>
+                                    {{ form.start_date }}
+                                    {% if form.start_date.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {{ form.start_date.errors }}
+                                    </div>
+                                    {% endif %}
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="{{ form.end_date.id_for_label }}">End Date</label>
+                                    {{ form.end_date }}
+                                    {% if form.end_date.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {{ form.end_date.errors }}
+                                    </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <button type="submit" class="btn btn-primary">
+                                {% if form.instance.pk %}Update{% else %}Create{% endif %}
+                            </button>
+                            <a href="{% url 'cooperatives:training-list' %}" class="btn btn-secondary">Cancel</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    $(document).ready(function() {
+        // Initialize select2 for dropdowns
+        $('#id_thematic_area, #id_trainer, #id_cooperative').select2({
+            theme: 'bootstrap4'
+        });
+
+        // Initialize select2 for members with search
+        $('#id_members').select2({
+            theme: 'bootstrap4',
+            placeholder: 'Select members',
+            allowClear: true
+        });
+
+        // Filter members based on selected cooperative
+        $('#id_cooperative').on('change', function() {
+            var cooperativeId = $(this).val();
+            if (cooperativeId) {
+                $.get('/api/cooperatives/' + cooperativeId + '/members/', function(data) {
+                    var membersSelect = $('#id_members');
+                    membersSelect.empty();
+                    $.each(data, function(index, member) {
+                        membersSelect.append(new Option(member.name, member.id));
+                    });
+                });
+            }
+        });
+    });
+</script>
+{% endblock %} 

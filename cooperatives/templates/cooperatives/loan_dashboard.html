@@ -15,11 +15,11 @@
                 <div class="card-body">
                     <div class="row no-gutters align-items-center">
                         <div class="col mr-2">
-                            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">Total Loans</div>
-                            <div class="h5 mb-0 font-weight-bold">{{ total_loans|intcomma }}</div>
+                            <div class="text-xs font-weight-bold text-purple text-uppercase mb-1">Total Loans</div>
+                            <div class="fs-20px mb-0 font-weight-bold text-indigo">{{ total_loans|intcomma }}</div>
                         </div>
                         <div class="col-auto">
-                            <i class="fas fa-file-invoice-dollar fa-2x text-gray-300"></i>
+                            <i class="fas fa-file-invoice-dollar fa-2x text-indigo"></i>
                         </div>
                     </div>
                 </div>
@@ -31,11 +31,11 @@
                 <div class="card-body">
                     <div class="row no-gutters align-items-center">
                         <div class="col mr-2">
-                            <div class="text-xs font-weight-bold text-success text-uppercase mb-1">Total Requested</div>
-                            <div class="h5 mb-0 font-weight-bold">UGX {{ total_requested|intcomma }}</div>
+                            <div class="text-xs font-weight-bold text-purple text-uppercase mb-1">Total Requested</div>
+                            <div class="fs-20px mb-0 font-weight-bold text-indigo">{{ total_requested|intcomma }}</div>
                         </div>
                         <div class="col-auto">
-                            <i class="fas fa-money-bill-wave fa-2x"></i>
+                            <i class="fas fa-money-bill-wave fa-2x text-indigo"></i>
                         </div>
                     </div>
                 </div>
@@ -47,11 +47,11 @@
                 <div class="card-body">
                     <div class="row no-gutters align-items-center">
                         <div class="col mr-2">
-                            <div class="text-xs font-weight-bold text-info text-uppercase mb-1">Total Approved</div>
-                            <div class="h5 mb-0 font-weight-bold text-theme">UGX {{ total_approved|intcomma }}</div>
+                            <div class="text-xs font-weight-bold text-purple text-uppercase mb-1">Total Approved</div>
+                            <div class="fs-20px mb-0 font-weight-bold text-indigo">{{ total_approved|intcomma }}</div>
                         </div>
                         <div class="col-auto">
-                            <i class="fas fa-check-circle fa-2x text-gray-300"></i>
+                            <i class="fas fa-check-circle fa-2x text-success"></i>
                         </div>
                     </div>
                 </div>
@@ -63,8 +63,8 @@
                 <div class="card-body">
                     <div class="row no-gutters align-items-center">
                         <div class="col mr-2">
-                            <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">Approval Rate</div>
-                            <div class="h5 mb-0 font-weight-bold text-theme">
+                            <div class="text-xs font-weight-bold text-purple text-uppercase mb-1">Approval Rate</div>
+                            <div class="fs-20px mb-0 font-weight-bold text-indigo">
                                 {% if total_requested > 0 %}
                                     {{ total_approved|div:total_requested|mul:100|floatformat:1 }}%
                                 {% else %}
@@ -73,7 +73,7 @@
                             </div>
                         </div>
                         <div class="col-auto">
-                            <i class="fas fa-percentage fa-2x text-gray-300"></i>
+                            <i class="fas fa-percentage fa-2x text-indigo"></i>
                         </div>
                     </div>
                 </div>
@@ -86,8 +86,8 @@
         <!-- Loan Status Distribution -->
         <div class="col-xl-6 col-lg-6">
             <div class="card shadow mb-4">
-                <div class="card-header py-3">
-                    <h6 class="m-0 font-weight-bold text-theme">Loan Status Distribution</h6>
+                    <div class="card-header bg-teal-800 py-3">
+                    <h6 class="m-0 font-weight-bold text-white">Loan Status Distribution</h6>
                 </div>
                 <div class="card-body">
                     <canvas id="statusChart"></canvas>
@@ -98,8 +98,8 @@
         <!-- Monthly Loan Trends -->
         <div class="col-xl-6 col-lg-6">
             <div class="card shadow mb-4">
-                <div class="card-header py-3">
-                    <h6 class="m-0 font-weight-bold text-theme">Monthly Loan Trends</h6>
+                <div class="card-header bg-teal-800 py-3">
+                    <h6 class="m-0 font-weight-bold text-white">Monthly Loan Trends</h6>
                 </div>
                 <div class="card-body">
                     <canvas id="monthlyChart"></canvas>
@@ -113,8 +113,8 @@
         <!-- Top Credit Managers -->
         <div class="col-xl-6 col-lg-6">
             <div class="card shadow mb-4">
-                <div class="card-header py-3">
-                    <h6 class="m-0 font-weight-bold text-primary">Top Credit Managers</h6>
+                <div class="card-header bg-teal-800 py-3">
+                    <h6 class="m-0 font-weight-bold text-white">Top Credit Managers</h6>
                 </div>
                 <div class="card-body">
                     <div class="table-responsive">
@@ -146,8 +146,8 @@
         <!-- Top Members -->
         <div class="col-xl-6 col-lg-6">
             <div class="card shadow mb-4">
-                <div class="card-header py-3">
-                    <h6 class="m-0 font-weight-bold text-primary">Top Members</h6>
+                <div class="card-header bg-teal-800 py-3">
+                    <h6 class="m-0 font-weight-bold text-white">Top Members</h6>
                 </div>
                 <div class="card-body">
                     <div class="table-responsive">
@@ -192,8 +192,8 @@
             datasets: [{
                 label: 'Number of Loans',
                 data: {{ status_counts|safe }},
-                backgroundColor: 'rgba(54, 162, 235, 0.5)',
-                borderColor: 'rgba(54, 162, 235, 1)',
+                backgroundColor: 'rgb(27, 179, 126)',
+                borderColor: 'rgb(14, 86, 31)',
                 borderWidth: 1
             }]
         },
@@ -216,12 +216,12 @@
             datasets: [{
                 label: 'Requested Amount',
                 data: {{ monthly_requested|safe }},
-                borderColor: 'rgba(75, 192, 192, 1)',
+                borderColor: 'rgb(230, 126, 232)',
                 tension: 0.1
             }, {
                 label: 'Approved Amount',
                 data: {{ monthly_approved|safe }},
-                borderColor: 'rgba(255, 99, 132, 1)',
+                borderColor: 'rgb(167, 17, 181)',
                 tension: 0.1
             }]
         },

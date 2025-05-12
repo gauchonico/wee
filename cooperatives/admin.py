@@ -1,7 +1,7 @@
 from django.contrib import admin
 from .models import (
     District, County, Price, SubCounty, Parish, Village, PaymentMode,
-    Cooperative, FarmerGroup, Member, Product, Unit, Supplier, SupplierProduct
+    Cooperative, FarmerGroup, Member, Product, Unit, Supplier, SupplierProduct, Offtaker, Sale, Store
 )
 
 @admin.register(District)
@@ -100,3 +100,7 @@ class SupplierProductAdmin(admin.ModelAdmin):
     list_filter = ('supplier', 'unit')
     search_fields = ('name', 'supplier__name')
     list_per_page = 20
+
+admin.site.register(Offtaker)
+admin.site.register(Sale)
+admin.site.register(Store)

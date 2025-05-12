@@ -158,4 +158,40 @@ urlpatterns = [
     path('loans/delete-all/', views.LoanDeleteAllView.as_view(), name='loan-delete-all'),
     path('members/<int:member_id>/loans/', views.MemberLoanListView.as_view(), name='member-loans'),
     path('loans/dashboard/', views.LoanDashboardView.as_view(), name='loan_dashboard'),
+
+    # Offtaker URLs
+    path('offtakers/', views.OfftakerListView.as_view(), name='offtaker-list'),
+    path('offtakers/create/', views.OfftakerCreateView.as_view(), name='offtaker-create'),
+    path('offtakers/<int:pk>/', views.OfftakerDetailView.as_view(), name='offtaker-detail'),
+    path('offtakers/<int:pk>/update/', views.OfftakerUpdateView.as_view(), name='offtaker-update'),
+    path('offtakers/<int:pk>/delete/', views.OfftakerDeleteView.as_view(), name='offtaker-delete'),
+
+    # Sale URLs
+    path('sales/', views.SaleListView.as_view(), name='sale-list'),
+    path('sales/create/', views.SaleCreateView.as_view(), name='sale-create'),
+    path('sales/<int:pk>/', views.SaleDetailView.as_view(), name='sale-detail'),
+    path('sales/<int:pk>/update/', views.SaleUpdateView.as_view(), name='sale-update'),
+    path('sales/<int:pk>/delete/', views.SaleDeleteView.as_view(), name='sale-delete'),
+
+    # Store URLs
+    path('store/', views.StoreListView.as_view(), name='store-list'),
+    path('store/<int:pk>/', views.StoreDetailView.as_view(), name='store-detail'),
+
+    # Thematic Area URLs
+    path('thematic-areas/', views.ThematicAreaListView.as_view(), name='thematic-area-list'),
+    path('thematic-areas/<int:pk>/', views.ThematicAreaDetailView.as_view(), name='thematic-area-detail'),
+    path('thematic-areas/create/', views.ThematicAreaCreateView.as_view(), name='thematic-area-create'),
+    path('thematic-areas/<int:pk>/update/', views.ThematicAreaUpdateView.as_view(), name='thematic-area-update'),
+    path('thematic-areas/<int:pk>/delete/', views.ThematicAreaDeleteView.as_view(), name='thematic-area-delete'),
+
+    # Training URLs
+    path('trainings/', views.TrainingListView.as_view(), name='training-list'),
+    path('trainings/<int:pk>/', views.TrainingDetailView.as_view(), name='training-detail'),
+    path('trainings/create/', views.TrainingCreateView.as_view(), name='training-create'),
+    path('trainings/<int:pk>/update/', views.TrainingUpdateView.as_view(), name='training-update'),
+    path('trainings/<int:pk>/delete/', views.TrainingDeleteView.as_view(), name='training-delete'),
+    path('trainings/dashboard/', views.TrainingDashboardView.as_view(), name='training-dashboard'),
+
+    # API Endpoints
+    path('api/cooperatives/<int:cooperative_id>/members/', views.get_cooperative_members, name='cooperative-members-api'),
 ] 

@@ -4,7 +4,7 @@ from django.contrib.auth.decorators import login_required
 from django.urls import reverse_lazy
 from django.views.generic import ListView, DetailView, CreateView, UpdateView, DeleteView, FormView
 from django.contrib import messages
-from .models import Agent, District, Incentive
+from .models import Agent, Incentive
 from .forms import AgentForm, AgentBulkUploadForm, MemberAgentRelationshipForm, IncentiveForm
 from cooperatives.mixins import CustomLoginRequiredMixin
 from django.db.models import Q, F

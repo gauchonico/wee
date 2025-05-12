@@ -1,0 +1,47 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Delete Sale{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="h3 mb-0 text-gray-800">Delete Sale</h1>
+        <a href="{% url 'cooperatives:sale-list' %}" class="btn btn-secondary">
+            <i class="fas fa-arrow-left"></i> Back to List
+        </a>
+    </div>
+
+    <div class="card shadow mb-4">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">Confirm Deletion</h6>
+        </div>
+        <div class="card-body">
+            <p>Are you sure you want to delete this sale?</p>
+            <dl class="row">
+                <dt class="col-sm-3">Date:</dt>
+                <dd class="col-sm-9">{{ sale.created_at|date:"Y-m-d H:i" }}</dd>
+
+                <dt class="col-sm-3">Offtaker:</dt>
+                <dd class="col-sm-9">{{ sale.offtaker.name }}</dd>
+
+                <dt class="col-sm-3">Product:</dt>
+                <dd class="col-sm-9">{{ sale.product.name }}</dd>
+
+                <dt class="col-sm-3">Quantity:</dt>
+                <dd class="col-sm-9">{{ sale.quantity }}</dd>
+
+                <dt class="col-sm-3">Total Price:</dt>
+                <dd class="col-sm-9">{{ sale.total_price }}</dd>
+            </dl>
+
+            <form method="post">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-danger">
+                    <i class="fas fa-trash"></i> Delete
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %} 
