@@ -1,10 +1,13 @@
 from django.urls import path
 from . import views
 from . import api
+from django.urls import path, include
 
 app_name = 'cooperatives'
 
 urlpatterns = [
+    
+    # path('api/', include('cooperatives.api.urls')),
     # District URLs
     path('districts/', views.DistrictListView.as_view(), name='district-list'),
     path('districts/<int:pk>/', views.DistrictDetailView.as_view(), name='district-detail'),
@@ -114,7 +117,7 @@ urlpatterns = [
     path('units/<int:pk>/delete/', views.UnitDeleteView.as_view(), name='unit-delete'),
     
     # API URLs
-    path('api/farmer-groups/', api.get_farmer_groups, name='api-farmer-groups'),
+    # path('api/farmer-groups/', api.get_farmer_groups, name='api-farmer-groups'),
     path('dashboard/', views.DashboardView.as_view(), name='dashboard'),
     
     # Supplier URLs
