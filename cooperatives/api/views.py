@@ -1,4 +1,4 @@
-from rest_framework import viewsets
+from rest_framework import viewsets, status
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated  # Optional: use if you want to restrict access
 from rest_framework.response import Response
@@ -29,3 +29,32 @@ def stats_summary(request):
         
     }
     return Response(data)
+
+@api_view(['GET'])
+def search_member_by_id(request):
+    member_id = request.GET.get('member_id')
+    if not member_id:
+        return Response({'error': 'member_id parameter is required.'}, status=status.HTTP_400_BAD_REQUEST)
+    try:
+        member = Member.objects.get(member_id=member_id)
+        serializer = MemberSerializer(member)
+        return Response(serializer.data)
+    except Member.DoesNotExist:
+        return Response({'error': 'Member not found.'}, status=status.HTTP_404_NOT_FOUND)
+    
+    
+@api_view(['POST'])
+def add_cooperative(request):
+    serializer = CooperativeSerializer(data=request.data)
+    if serializer.is_valid():
+        serializer.save()
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+@api_view(['POST'])
+def add_member(request):
+    serializer = MemberSerializer(data=request.data)
+    if serializer.is_valid():
+        serializer.save()
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
