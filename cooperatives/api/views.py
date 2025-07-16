@@ -6,6 +6,7 @@ from django.contrib.auth import authenticate
 from rest_framework.authtoken.models import Token
 from ..models import Cooperative, Member, Training, Agent, Loan, Collection
 from .serializers import CooperativeSerializer, MemberSerializer, TrainingSerializer
+from django.views.decorators.csrf import csrf_exempt
 
 class CooperativeViewSet(viewsets.ModelViewSet):
     queryset = Cooperative.objects.all()
@@ -97,6 +98,8 @@ def verify_user(request):
         'agent': agent_data
     })
 
+
+@csrf_exempt
 @api_view(['POST'])
 def login_user(request):
     """Login endpoint that returns token and agent info"""
