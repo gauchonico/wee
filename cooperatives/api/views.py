@@ -4,8 +4,8 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from django.contrib.auth import authenticate
 from rest_framework.authtoken.models import Token
-from ..models import Cooperative, Member, Training, Agent, Loan, Collection
-from .serializers import CooperativeSerializer, MemberSerializer, TrainingSerializer
+from ..models import Cooperative, Member, Training, Agent, Loan, Collection, District, County, SubCounty, Parish, Village, FarmerGroup, Product
+from .serializers import CooperativeSerializer, MemberSerializer, TrainingSerializer, DistrictSerializer, CountySerializer, SubCountySerializer, ParishSerializer, VillageSerializer, FarmerGroupSerializer, ProductSerializer
 from django.views.decorators.csrf import csrf_exempt
 
 class CooperativeViewSet(viewsets.ModelViewSet):
@@ -19,6 +19,34 @@ class MemberViewSet(viewsets.ModelViewSet):
 class TrainingViewSet(viewsets.ModelViewSet):
     queryset = Training.objects.all()
     serializer_class = TrainingSerializer
+
+class DistrictViewSet(viewsets.ReadOnlyModelViewSet):
+    queryset = District.objects.all()
+    serializer_class = DistrictSerializer
+
+class CountyViewSet(viewsets.ReadOnlyModelViewSet):
+    queryset = County.objects.all()
+    serializer_class = CountySerializer
+
+class SubCountyViewSet(viewsets.ReadOnlyModelViewSet):
+    queryset = SubCounty.objects.all()
+    serializer_class = SubCountySerializer
+
+class ParishViewSet(viewsets.ReadOnlyModelViewSet):
+    queryset = Parish.objects.all()
+    serializer_class = ParishSerializer
+
+class VillageViewSet(viewsets.ReadOnlyModelViewSet):
+    queryset = Village.objects.all()
+    serializer_class = VillageSerializer
+
+class FarmerGroupViewSet(viewsets.ReadOnlyModelViewSet):
+    queryset = FarmerGroup.objects.all()
+    serializer_class = FarmerGroupSerializer
+
+class ProductViewSet(viewsets.ReadOnlyModelViewSet):
+    queryset = Product.objects.all()
+    serializer_class = ProductSerializer
 
 @api_view(['GET'])
 def stats_summary(request):
@@ -62,6 +90,15 @@ def add_member(request):
         serializer.save()
         return Response(serializer.data, status=status.HTTP_201_CREATED)
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+@api_view(['GET'])
+def member_choices(request):
+    from ..models import Member
+    return Response({
+        'gender_choices': Member.GENDER_CHOICES,
+        'role_choices': Member.ROLE_CHOICES,
+        'id_type_choices': Member.ID_TYPE_CHOICES,
+    })
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
