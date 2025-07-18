@@ -11,6 +11,32 @@ from django.views.decorators.csrf import csrf_exempt
 class CooperativeViewSet(viewsets.ModelViewSet):
     queryset = Cooperative.objects.all()
     serializer_class = CooperativeSerializer
+    
+from .serializers import PlantingAllocationSerializer
+from ..models import PlantingAllocation
+from rest_framework import viewsets, filters
+from rest_framework.decorators import action
+from rest_framework.permissions import IsAuthenticated
+
+class PlantingAllocationViewSet(viewsets.ModelViewSet):
+    queryset = PlantingAllocation.objects.all()
+    serializer_class = PlantingAllocationSerializer
+    permission_classes = [IsAuthenticated]
+
+    # Optional: filter by member via query param
+    def get_queryset(self):
+        queryset = super().get_queryset()
+        member_id = self.request.query_params.get('member_id')
+        if member_id:
+            queryset = queryset.filter(member__id=member_id)
+        return queryset
+
+    # Optional: custom action to get allocations for a specific member
+    @action(detail=False, methods=['get'], url_path='by-member/(?P<member_id>[^/.]+)')
+    def by_member(self, request, member_id=None):
+        allocations = self.get_queryset().filter(member__id=member_id)
+        serializer = self.get_serializer(allocations, many=True)
+        return Response(serializer.data)
 
 class MemberViewSet(viewsets.ModelViewSet):
     queryset = Member.objects.all()

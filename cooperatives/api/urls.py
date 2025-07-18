@@ -4,7 +4,7 @@ from .views import (
     CooperativeViewSet, MemberViewSet, TrainingViewSet, member_choices,
     search_member_by_id, verify_user, login_user, logout_user,
     stats_summary, add_cooperative, add_member,
-    DistrictViewSet, CountyViewSet, SubCountyViewSet, ParishViewSet, VillageViewSet, FarmerGroupViewSet, ProductViewSet
+    DistrictViewSet, CountyViewSet, SubCountyViewSet, ParishViewSet, VillageViewSet, FarmerGroupViewSet, ProductViewSet, PlantingAllocationViewSet
 )
 
 router = DefaultRouter()
@@ -18,6 +18,7 @@ router.register(r'parishes', ParishViewSet)
 router.register(r'villages', VillageViewSet)
 router.register(r'farmergroups', FarmerGroupViewSet)
 router.register(r'products', ProductViewSet)
+router.register(r'planting-allocations', PlantingAllocationViewSet)
 
 urlpatterns = router.urls + [
     # Dashboard/Stats endpoints
