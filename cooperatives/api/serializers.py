@@ -79,6 +79,10 @@ class SupplierProductSerializer(serializers.ModelSerializer):
         depth = 1
 
 class PlantingAllocationSerializer(serializers.ModelSerializer):
+    member = serializers.SlugRelatedField(
+        queryset=Member.objects.all(),
+        slug_field='member_id'
+    )
     class Meta:
         model = PlantingAllocation
         fields = '__all__'
