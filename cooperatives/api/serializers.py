@@ -70,7 +70,6 @@ class MemberSerializer(serializers.ModelSerializer):
     class Meta:
         model = Member
         fields = '__all__'
-        depth = 1
 
 class SupplierProductSerializer(serializers.ModelSerializer):
     class Meta:
