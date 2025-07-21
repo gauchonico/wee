@@ -28,7 +28,7 @@ class PlantingAllocationViewSet(viewsets.ModelViewSet):
         queryset = super().get_queryset()
         member_id = self.request.query_params.get('member_id')
         if member_id:
-            queryset = queryset.filter(member__id=member_id)
+            queryset = queryset.filter(member__member_id=member_id)
         return queryset
 
     # Optional: custom action to get allocations for a specific member
@@ -107,6 +107,13 @@ def add_cooperative(request):
         serializer.save()
         return Response(serializer.data, status=status.HTTP_201_CREATED)
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+@api_view(['GET'])
+def cooperative_choices(request):
+    from ..models import Cooperative
+    return Response({
+        'fpo_type_choices': Cooperative.FPO_TYPES,
+    })
 
 @api_view(['POST'])
 def add_member(request):

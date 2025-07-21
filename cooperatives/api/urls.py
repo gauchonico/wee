@@ -1,7 +1,7 @@
 from rest_framework.routers import DefaultRouter
 from django.urls import path
 from .views import (
-    CooperativeViewSet, MemberViewSet, TrainingViewSet, member_choices,
+    CooperativeViewSet, MemberViewSet, TrainingViewSet, cooperative_choices, member_choices,
     search_member_by_id, verify_user, login_user, logout_user,
     stats_summary, add_cooperative, add_member,
     DistrictViewSet, CountyViewSet, SubCountyViewSet, ParishViewSet, VillageViewSet, FarmerGroupViewSet, ProductViewSet, PlantingAllocationViewSet
@@ -35,5 +35,6 @@ urlpatterns = router.urls + [
     # Add endpoints
     path('add-member/', add_member, name='add-member'),
     path('add-cooperative/', add_cooperative, name='add-cooperative'),
+    path('cooperative-choices/', cooperative_choices, name='cooperative-choices'),
     path('member-choices/', member_choices, name='member-choices'),
 ]
