@@ -21,7 +21,7 @@ from rest_framework.permissions import IsAuthenticated
 class PlantingAllocationViewSet(viewsets.ModelViewSet):
     queryset = PlantingAllocation.objects.all()
     serializer_class = PlantingAllocationSerializer
-    permission_classes = [IsAuthenticated]
+    # permission_classes = [IsAuthenticated]
 
     # Optional: filter by member via query param
     def get_queryset(self):
