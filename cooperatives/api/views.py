@@ -7,16 +7,20 @@ from rest_framework.authtoken.models import Token
 from ..models import Cooperative, Member, Training, Agent, Loan, Collection, District, County, SubCounty, Parish, Village, FarmerGroup, Product
 from .serializers import CooperativeSerializer, MemberSerializer, TrainingSerializer, DistrictSerializer, CountySerializer, SubCountySerializer, ParishSerializer, VillageSerializer, FarmerGroupSerializer, ProductSerializer
 from django.views.decorators.csrf import csrf_exempt
-
-class CooperativeViewSet(viewsets.ModelViewSet):
-    queryset = Cooperative.objects.all()
-    serializer_class = CooperativeSerializer
-    
 from .serializers import PlantingAllocationSerializer
 from ..models import PlantingAllocation
 from rest_framework import viewsets, filters
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
+
+class CooperativeViewSet(viewsets.ModelViewSet):
+    queryset = Cooperative.objects.all()
+    serializer_class = CooperativeSerializer
+    
+    # Add these two lines to enable searching
+    filter_backends = [filters.SearchFilter] # This tells DRF to use the search filter
+    search_fields = ['fpo_name', 'contact_person', 'phone_number'] # Define which fields can be searched
+    
 
 class PlantingAllocationViewSet(viewsets.ModelViewSet):
     queryset = PlantingAllocation.objects.all()
